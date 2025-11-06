@@ -1,21 +1,21 @@
-import { Injectable, inject } from '@angular/core';
+import {Injectable, inject} from '@angular/core';
 import OpenAI from 'openai';
-import { ChatCompletionChunk, ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import { Stream } from 'openai/streaming';
+import {ChatCompletionChunk, ChatCompletionMessageParam} from 'openai/resources/chat/completions';
+import {Stream} from 'openai/streaming';
 
-import { USER_PROFILE } from '../models';
-import { ChatService } from './chat.service';
+import {USER_PROFILE} from '../models';
+import {ChatService} from './chat.service';
 
 @Injectable({
-  providedIn: 'root'
+    providedIn: 'root'
 })
 export class AiService {
-  private chatService = inject(ChatService);
+    private chatService = inject(ChatService);
 
-  private getSystemPrompt(): string {
-    const today = new Date().toISOString().split('T')[0];
-    
-    return `
+    private getSystemPrompt(): string {
+        const today = new Date().toISOString().split('T')[0];
+
+        return `
       Você é um assistente de fitness especialista para um aplicativo de registro de treinos. Seu nome é Gymini.
       Seu principal objetivo é ajudar os usuários a registrar seus treinos e recuperar informações de seu histórico de treinos.
       Sempre seja amigável, encorajador e use Português (Brasil). Use emojis para deixar a conversa mais leve. 🏋️‍♂️💪
@@ -102,38 +102,42 @@ export class AiService {
       **CONTEXTO DO USUÁRIO (NÃO EXIBIR PARA O USUÁRIO):**
       - Perfil do usuário: ${JSON.stringify(USER_PROFILE)}
     `;
-  }
-  
-  async sendMessage(message: string): Promise<Stream<ChatCompletionChunk>> {
-    const apiKey = this.chatService.apiKey();
-    if (!apiKey) {
-      throw new Error("DeepSeek API key not set.");
     }
-    
-    const openai = new OpenAI({
-      apiKey: apiKey,
-      baseURL: 'https://api.deepseek.com/v1',
-      dangerouslyAllowBrowser: true
-    });
 
-    const history = this.chatService.messages()
-      .filter(m => m.type === 'text' || m.role === 'user') // simple history
-      .slice(-6) // last 6 messages
-      .map(m => ({
-        role: m.role === 'model' ? 'assistant' as const : 'user' as const,
-        content: m.text || ''
-      }));
+    async sendMessage(message: string): Promise<Stream<ChatCompletionChunk>> {
+        const apiKey = this.chatService.apiKey();
+        if (!apiKey) {
+            throw new Error("DeepSeek API key not set.");
+        }
 
-    const stream = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        { role: 'system', content: this.getSystemPrompt() },
-        ...history,
-        { role: 'user', content: message }
-      ],
-      stream: true,
-    });
-    
-    return stream;
-  }
+        const openai = new OpenAI({
+            apiKey: apiKey,
+            baseURL: 'https://api.deepseek.com/v1',
+            dangerouslyAllowBrowser: true
+        });
+
+        const allMessages = this.chatService.messages();
+
+        const historyToProcess = allMessages.slice(0, -1);
+
+        const history = historyToProcess
+            .filter(m => m.text && m.type !== 'loading' && m.type !== 'error')
+            .slice(-6) // last 6 messages
+            .map(m => ({
+                role: m.role === 'model' ? 'assistant' as const : 'user' as const,
+                content: m.text || ''
+            }));
+
+        const stream = await openai.chat.completions.create({
+            model: 'deepseek-chat',
+            messages: [
+                {role: 'system', content: this.getSystemPrompt()},
+                ...history,
+                {role: 'user', content: message}
+            ],
+            stream: true,
+        });
+
+        return stream;
+    }
 }
