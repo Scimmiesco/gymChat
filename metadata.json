@@ -1,0 +1,5 @@
+{
+  "name": "AI Workout Logger",
+  "description": "A mobile-first web application to log your workouts through an intelligent, conversational AI chatbot powered by Gemini. Track your progress, estimate calories burned, and manage your workout history with ease.",
+  "requestFramePermissions": []
+}
