@@ -5,9 +5,11 @@ import { ChatMessage } from '../models';
   providedIn: 'root',
 })
 export class ChatService {
-  private readonly STORAGE_KEY = 'aiWorkoutLoggerChatHistory';
+  private readonly CHAT_HISTORY_KEY = 'aiWorkoutLoggerChatHistory';
+  private readonly API_KEY_STORAGE_KEY = 'aiWorkoutLogger_deepseekApiKey';
   
   messages = signal<ChatMessage[]>(this.loadFromStorage());
+  apiKey = signal<string | null>(this.loadApiKey());
 
   private getDefaultWelcomeMessage(): ChatMessage {
     return {
@@ -26,9 +28,27 @@ Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um 
     };
   }
 
+  private loadApiKey(): string | null {
+    try {
+      return localStorage.getItem(this.API_KEY_STORAGE_KEY);
+    } catch (e) {
+      console.error('Failed to load API key from storage', e);
+      return null;
+    }
+  }
+
+  saveApiKey(key: string): void {
+    try {
+      this.apiKey.set(key);
+      localStorage.setItem(this.API_KEY_STORAGE_KEY, key);
+    } catch (e) {
+      console.error('Failed to save API key to storage', e);
+    }
+  }
+
   private loadFromStorage(): ChatMessage[] {
     try {
-      const data = localStorage.getItem(this.STORAGE_KEY);
+      const data = localStorage.getItem(this.CHAT_HISTORY_KEY);
       const messages = data ? JSON.parse(data) : [];
       if (messages.length === 0) {
         return [this.getDefaultWelcomeMessage()];
@@ -42,7 +62,7 @@ Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um 
 
   private saveToStorage(messages: ChatMessage[]): void {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(messages));
+      localStorage.setItem(this.CHAT_HISTORY_KEY, JSON.stringify(messages));
     } catch (e) {
       console.error('Failed to save chat history to storage', e);
     }

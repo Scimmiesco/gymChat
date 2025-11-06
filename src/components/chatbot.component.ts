@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal, viewChild, ElementRef, effect, inject, computed } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { GeminiService } from '../services/gemini.service';
+import { AiService } from '../services/gemini.service';
 import { WorkoutService } from '../services/workout.service';
 import { ChatService } from '../services/chat.service';
 import { ChatMessage, Workout, USER_PROFILE } from '../models';
@@ -16,7 +16,7 @@ import { WorkoutCardComponent } from './workout-card.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatComponent {
-  geminiService = inject(GeminiService);
+  aiService = inject(AiService);
   workoutService = inject(WorkoutService);
   chatService = inject(ChatService);
   datePipe = inject(DatePipe);
@@ -25,6 +25,8 @@ export class ChatComponent {
   userInput = signal('');
   isLoading = signal(false);
   showProfile = signal(false);
+  showSettings = signal(false);
+  apiKeyInput = signal(this.chatService.apiKey() ?? '');
 
   chatContainer = viewChild<ElementRef<HTMLDivElement>>('chatContainer');
   importFileInput = viewChild<ElementRef<HTMLInputElement>>('importFileInput');
@@ -47,8 +49,6 @@ export class ChatComponent {
   });
 
   constructor() {
-    this.geminiService.startChat();
-
     effect(() => {
         if (this.chatContainer()) {
             this.scrollToBottom();
@@ -75,6 +75,12 @@ export class ChatComponent {
     const userMessageText = this.userInput().trim();
     if (!userMessageText || this.isLoading()) return;
 
+    if (!this.chatService.apiKey()) {
+      this.addMessage('model', 'error', 'Por favor, configure sua chave de API da DeepSeek nas configurações. ⚙️');
+      this.showSettings.set(true);
+      return;
+    }
+
     this.isLoading.set(true);
     const userMessage: ChatMessage = {
         id: Date.now(),
@@ -89,18 +95,21 @@ export class ChatComponent {
     this.chatService.addMessage({ id: Date.now() + 1, role: 'model', type: 'loading', timestamp: new Date().toISOString() });
 
     try {
-      const stream = await this.geminiService.sendMessage(userMessageText);
+      const stream = await this.aiService.sendMessage(userMessageText);
       let fullResponse = '';
       
       for await (const chunk of stream) {
-        fullResponse += chunk.text;
-        this.chatService.updateLastMessage(lastMessage => {
-            if (lastMessage.type === 'loading') {
-                lastMessage.type = 'text';
-            }
-            lastMessage.text = this.cleanResponse(fullResponse);
-        });
-        this.scrollToBottom();
+        const content = chunk.choices[0]?.delta?.content || '';
+        if (content) {
+          fullResponse += content;
+          this.chatService.updateLastMessage(lastMessage => {
+              if (lastMessage.type === 'loading') {
+                  lastMessage.type = 'text';
+              }
+              lastMessage.text = this.cleanResponse(fullResponse);
+          });
+          this.scrollToBottom();
+        }
       }
       
       const parsedAction = this.extractJson(fullResponse);
@@ -111,9 +120,13 @@ export class ChatComponent {
 
     } catch (error) {
       console.error('Error sending message:', error);
+      let errorMessage = 'Desculpe, ocorreu um erro. Tente novamente. 😥';
+       if (error instanceof Error && (error.message.includes('401') || error.message.toLowerCase().includes('incorrect api key'))) {
+          errorMessage = 'A chave de API parece ser inválida. Verifique-a nas configurações. 🔑'
+      }
       this.chatService.updateLastMessage(lastMessage => {
             if (lastMessage.type === 'loading' || lastMessage.type === 'text') {
-               lastMessage.text = 'Desculpe, ocorreu um erro. Tente novamente. 😥';
+               lastMessage.text = errorMessage;
                lastMessage.type = 'error';
             }
         });
@@ -121,6 +134,12 @@ export class ChatComponent {
       this.isLoading.set(false);
       this.scrollToBottom();
     }
+  }
+
+  saveSettings() {
+    this.chatService.saveApiKey(this.apiKeyInput().trim());
+    this.showSettings.set(false);
+    this.addMessage('model', 'text', '✅ Chave de API salva com sucesso!');
   }
 
   private handleAction(parsed: any) {

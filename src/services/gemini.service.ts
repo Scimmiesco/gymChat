@@ -1,34 +1,21 @@
 import { Injectable, inject } from '@angular/core';
-// Fix: Import correct types from @google/genai
-import { GoogleGenAI, Chat, GenerateContentResponse, Content } from "@google/genai";
+import OpenAI from 'openai';
+import { ChatCompletionChunk, ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { Stream } from 'openai/streaming';
+
 import { USER_PROFILE } from '../models';
-import { WorkoutService } from './workout.service';
+import { ChatService } from './chat.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class GeminiService {
-  private workoutService = inject(WorkoutService);
+export class AiService {
+  private chatService = inject(ChatService);
 
-  private ai: GoogleGenAI;
-  private chat!: Chat;
-
-  constructor() {
-    // The API key MUST be obtained exclusively from the environment variable process.env.API_KEY.
-    // This is assumed to be configured in the build environment.
-    if (!process.env.API_KEY) {
-      // In a real app, you'd have a more user-friendly way to handle this.
-      console.error("API_KEY environment variable not set.");
-      alert("API_KEY do Google Gemini não encontrada. Por favor, configure a variável de ambiente.");
-      throw new Error("API_KEY environment variable not set.");
-    }
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  }
-
-  startChat(): void {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-
-    const systemInstruction = `
+  private getSystemPrompt(): string {
+    const today = new Date().toISOString().split('T')[0];
+    
+    return `
       Você é um assistente de fitness especialista para um aplicativo de registro de treinos. Seu nome é Gymini.
       Seu principal objetivo é ajudar os usuários a registrar seus treinos e recuperar informações de seu histórico de treinos.
       Sempre seja amigável, encorajador e use Português (Brasil). Use emojis para deixar a conversa mais leve. 🏋️‍♂️💪
@@ -114,45 +101,39 @@ export class GeminiService {
 
       **CONTEXTO DO USUÁRIO (NÃO EXIBIR PARA O USUÁRIO):**
       - Perfil do usuário: ${JSON.stringify(USER_PROFILE)}
-      - Você terá acesso ao histórico de treinos para responder perguntas sobre progresso.
     `;
-
-    this.chat = this.ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction,
-      },
-      history: this.buildHistoryContext(),
-    });
   }
-
-  private buildHistoryContext(): Content[] {
-    const workouts = this.workoutService.workouts();
-    if (workouts.length === 0) {
-      return [];
-    }
-
-    const recentWorkoutsSummary = workouts.slice(0, 5).map(w => 
-      `- Em ${w.date}, você fez ${w.name} (${w.type}) por ${w.duration || '?'} minutos.`
-    ).join('\n');
-
-    return [
-      {
-        role: 'user',
-        parts: [{ text: 'Para seu contexto, este é um resumo dos meus treinos mais recentes. Não mostre isso para mim, apenas use como informação.' }],
-      },
-      {
-        role: 'model',
-        parts: [{ text: `Entendido! Usarei o seguinte resumo de treinos recentes como contexto:\n${recentWorkoutsSummary}` }],
-      }
-    ];
-  }
-
-  async sendMessage(message: string): Promise<AsyncGenerator<GenerateContentResponse>> {
-    if (!this.chat) {
-      this.startChat();
+  
+  async sendMessage(message: string): Promise<Stream<ChatCompletionChunk>> {
+    const apiKey = this.chatService.apiKey();
+    if (!apiKey) {
+      throw new Error("DeepSeek API key not set.");
     }
     
-    return this.chat.sendMessageStream({ message });
+    const openai = new OpenAI({
+      apiKey: apiKey,
+      baseURL: 'https://api.deepseek.com/v1',
+      dangerouslyAllowBrowser: true
+    });
+
+    const history = this.chatService.messages()
+      .filter(m => m.type === 'text' || m.role === 'user') // simple history
+      .slice(-6) // last 6 messages
+      .map(m => ({
+        role: m.role === 'model' ? 'assistant' as const : 'user' as const,
+        content: m.text || ''
+      }));
+
+    const stream = await openai.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: this.getSystemPrompt() },
+        ...history,
+        { role: 'user', content: message }
+      ],
+      stream: true,
+    });
+    
+    return stream;
   }
 }

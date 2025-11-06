@@ -1,14 +1,19 @@
 <div class="flex flex-col h-full w-full max-w-4xl mx-auto bg-gray-800/50 shadow-2xl">
   
   <!-- Header -->
-  <header (click)="showProfile.set(true)" class="flex items-center p-3 bg-[#202c33] cursor-pointer shrink-0">
-    <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-xl mr-4">
-      <span>👤</span>
+  <header class="flex items-center justify-between p-3 bg-[#202c33] shrink-0">
+    <div (click)="showProfile.set(true)" class="flex items-center cursor-pointer">
+      <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-xl mr-4">
+        <span>👤</span>
+      </div>
+      <div>
+        <h3 class="font-semibold">Meu Diário de Treino</h3>
+        <p class="text-xs text-gray-400">online</p>
+      </div>
     </div>
-    <div>
-      <h3 class="font-semibold">Meu Diário de Treino</h3>
-      <p class="text-xs text-gray-400">online</p>
-    </div>
+     <button (click)="showSettings.set(true)" class="text-2xl text-gray-400 hover:text-white transition-colors p-2 rounded-full">
+      <span>⚙️</span>
+    </button>
   </header>
 
   <!-- Messages -->
@@ -151,5 +156,38 @@
     </div>
   </div>
 }
+
+<!-- Settings Modal -->
+@if (showSettings()) {
+  <div (click)="showSettings.set(false)" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div (click)="$event.stopPropagation()" class="bg-gray-800 rounded-2xl p-6 w-full max-w-sm border border-gray-700">
+      <h2 class="text-2xl font-bold text-center">Configurações</h2>
+      <p class="text-gray-400 text-center mt-1 mb-6">Gerencie suas chaves de API.</p>
+      
+      <div class="space-y-2">
+        <label for="apiKey" class="text-sm font-medium text-gray-300">Chave de API DeepSeek</label>
+        <input 
+          id="apiKey"
+          type="password"
+          [(ngModel)]="apiKeyInput"
+          name="apiKeyInput"
+          placeholder="Insira sua chave de API aqui"
+          class="w-full bg-[#2a3942] rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        >
+        <p class="text-xs text-gray-500">Sua chave é salva localmente e nunca sai do seu navegador.</p>
+      </div>
+
+      <div class="flex items-center gap-4 mt-6">
+        <button (click)="showSettings.set(false)" class="bg-gray-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-gray-700 transition-colors">
+          Cancelar
+        </button>
+        <button (click)="saveSettings()" [disabled]="!apiKeyInput()" class="bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-emerald-700 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 
 <input type="file" #importFileInput class="hidden" (change)="importData($event)" accept=".json">
