@@ -1,10 +1,10 @@
-import {Injectable, inject} from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import OpenAI from 'openai';
-import {ChatCompletionChunk, ChatCompletionMessageParam} from 'openai/resources/chat/completions';
+import {ChatCompletionChunk} from 'openai/resources/chat/completions';
 import {Stream} from 'openai/streaming';
 
-import {USER_PROFILE} from '../models';
-import {ChatService} from './chat.service';
+import { USER_PROFILE } from '../models';
+import { ChatService } from './chat.service';
 
 @Injectable({
     providedIn: 'root'
@@ -24,6 +24,7 @@ export class AiService {
       - Para qualquer ação funcional (registrar treino, mostrar histórico, etc.), sua resposta DEVE conter um bloco de código JSON formatado como \`\`\`json ... \`\`\`.
       - Você PODE adicionar uma mensagem de texto curta e amigável ANTES do bloco JSON. A interface do usuário irá extrair o JSON para executar a ação.
       - Se o usuário estiver apenas conversando, responda normalmente sem um bloco JSON.
+      - **NÃO INVENTE INFORMAÇÕES**. Se um dado não foi fornecido e não pode ser estimado com segurança (como a data), omita o campo correspondente do JSON.
 
       **AÇÕES JSON DISPONÍVEIS:**
 
@@ -48,10 +49,14 @@ export class AiService {
             }
           }
           \`\`\`
-          *DATA*: A data de hoje é **${today}**. Use esta data como referência para processar menções de datas relativas como "ontem" ou "terça-feira". Converta a data mencionada para o formato \`YYYY-MM-DD\` e inclua-a no campo \`date\`. Se o usuário mencionar a data de forma redundante (ex: "no treino de ontem, eu fiz ontem..."), interprete-o como uma única data. Se NENHUMA data for mencionada, **OMITA** o campo \`date\` do JSON; o aplicativo usará a data atual como padrão.
+          *DATA*: A data de hoje é **${today}**. Use esta data como referência para processar menções de datas relativas como "ontem" ou "terça-feira". Converta a data mencionada para o formato \`YYYY-MM-DD\`. Se NENHUMA data for mencionada, **VOCÊ DEVE OMITIR** o campo \`date\` do JSON; o aplicativo usará a data atual como padrão. Omitir o campo é crucial.
           *Não* adicione um campo "name" dentro de "sets". Apenas reps e weight/duration_sec.
           *Lembre-se de expandir notações como "4x8 com 10kg" ou "2x12 108kg" em objetos de séries individuais no array "sets". Para "2x12 108kg", você deve criar dois objetos de série, ambos com 12 repetições e 108kg de peso.*
-          **IMPORTANTE**: O campo \`duration\` (em minutos) é OBRIGATÓRIO para o cálculo de calorias. Se o usuário não especificar a duração, ESTIME uma duração razoável com base nos exercícios descritos (ex: um treino de musculação com 3-4 exercícios dura cerca de 45-60 min, uma corrida de 5km dura cerca de 25-30 min).
+          **IMPORTANTE (DURAÇÃO)**: O campo \`duration\` (em minutos) é OBRIGATÓRIO para o cálculo de calorias. Se o usuário não especificar a duração, você DEVE estimar uma duração. A sua estimativa deve ser inteligente:
+          - Se o usuário descreve **um único exercício de musculação** (como "fiz supino 4x8"), estime uma duração curta, entre **8 a 12 minutos**. É irrealista que um único exercício dure mais que isso.
+          - Se o usuário descreve **vários exercícios de musculação** (2 ou mais), estime uma duração mais longa, como **45-60 minutos**.
+          - Para **exercícios de cardio**, use estimativas comuns (ex: corrida de 5km dura cerca de 25-30 min, caminhada de 3km dura cerca de 30-35 min).
+          - Se a sua estimativa for baseada em poucos dados, adicione uma nota sobre isso no campo \`notes\`. Ex: "Duração estimada com base em um único exercício."
           Se o usuário descreve um treino com uma data no passado (ex: "ontem treinei..."), a ação correta é 'log_workout', não 'show_history'. A sua tarefa é registrar o treino na data especificada.
 
       2.  **show_history**: Quando o usuário pede para ver o histórico de treinos.
@@ -117,10 +122,13 @@ export class AiService {
         });
 
         const allMessages = this.chatService.messages();
-
+        // Exclude the last message, which is the current user input that's passed in the `message` parameter.
+        // This prevents sending the same user message twice.
         const historyToProcess = allMessages.slice(0, -1);
 
         const history = historyToProcess
+            // Create a richer history by including the text from all previous messages,
+            // not just 'text' type, for better conversational context.
             .filter(m => m.text && m.type !== 'loading' && m.type !== 'error')
             .slice(-6) // last 6 messages
             .map(m => ({
@@ -131,9 +139,9 @@ export class AiService {
         const stream = await openai.chat.completions.create({
             model: 'deepseek-chat',
             messages: [
-                {role: 'system', content: this.getSystemPrompt()},
+                { role: 'system', content: this.getSystemPrompt() },
                 ...history,
-                {role: 'user', content: message}
+                { role: 'user', content: message }
             ],
             stream: true,
         });
