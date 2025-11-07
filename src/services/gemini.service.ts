@@ -29,32 +29,63 @@ export class AiService {
       **AÇÕES JSON DISPONÍVEIS:**
 
       1.  **log_workout**: Quando o usuário descreve um treino que acabou de fazer.
-          Exemplo de input: "ontem fiz 3x10 supino com 80kg e corri 5km em 30min"
-          Exemplo de JSON de saída (assumindo que hoje é 2024-11-06):
+          - **SE** a mensagem do usuário contiver **VÁRIOS exercícios distintos**, sua resposta DEVE conter um array de objetos de treino sob a chave \`"workouts"\` (plural). Cada objeto no array representa um exercício.
+          - **SE** for apenas **UM exercício**, use o formato original com a chave \`"workout"\` (singular).
+
+          **Exemplo de Múltiplos Exercícios (CHAVE "workouts"):**
+          Input: "fiz 10 min de esteira e depois supino 3x8 com 60kg"
+          JSON de Saída:
+          \`\`\`json
+          {
+            "action": "log_workout",
+            "workouts": [
+              {
+                "name": "Esteira",
+                "type": "cardio",
+                "duration": 10
+              },
+              {
+                "name": "Supino",
+                "type": "musculacao",
+                "duration": 15,
+                "notes": "Duração estimada.",
+                "sets": [
+                  { "reps": 8, "weight": 60 },
+                  { "reps": 8, "weight": 60 },
+                  { "reps": 8, "weight": 60 }
+                ]
+              }
+            ]
+          }
+          \`\`\`
+
+          **Exemplo de Exercício Único (CHAVE "workout"):**
+          Input: "agachamento 4x10 90kg"
+          JSON de Saída:
           \`\`\`json
           {
             "action": "log_workout",
             "workout": {
-              "name": "Supino e Corrida",
+              "name": "Agachamento",
               "type": "musculacao",
-              "date": "2024-11-05",
-              "duration": 45,
-              "notes": "Corrida depois do treino de peito.",
+              "duration": 15,
+              "notes": "Duração estimada com base em um único exercício.",
               "sets": [
-                { "reps": 10, "weight": 80 },
-                { "reps": 10, "weight": 80 },
-                { "reps": 10, "weight": 80 }
-              ],
-              "distance": 5
+                { "reps": 10, "weight": 90 },
+                { "reps": 10, "weight": 90 },
+                { "reps": 10, "weight": 90 },
+                { "reps": 10, "weight": 90 }
+              ]
             }
           }
           \`\`\`
+
           *DATA*: A data de hoje é **${today}**. Use esta data como referência para processar menções de datas relativas como "ontem" ou "terça-feira". Converta a data mencionada para o formato \`YYYY-MM-DD\`. Se NENHUMA data for mencionada, **VOCÊ DEVE OMITIR** o campo \`date\` do JSON; o aplicativo usará a data atual como padrão. Omitir o campo é crucial.
           *Não* adicione um campo "name" dentro de "sets". Apenas reps e weight/duration_sec.
           *Lembre-se de expandir notações como "4x8 com 10kg" ou "2x12 108kg" em objetos de séries individuais no array "sets". Para "2x12 108kg", você deve criar dois objetos de série, ambos com 12 repetições e 108kg de peso.*
-          **IMPORTANTE (DURAÇÃO)**: O campo \`duration\` (em minutos) é OBRIGATÓRIO para o cálculo de calorias. Se o usuário não especificar a duração, você DEVE estimar uma duração. A sua estimativa deve ser inteligente:
-          - Se o usuário descreve **um único exercício de musculação** (como "fiz supino 4x8"), estime uma duração curta, entre **8 a 12 minutos**. É irrealista que um único exercício dure mais que isso.
-          - Se o usuário descreve **vários exercícios de musculação** (2 ou mais), estime uma duração mais longa, como **45-60 minutos**.
+          **IMPORTANTE (DURAÇÃO)**: O campo \`duration\` (em minutos) é OBRIGATÓRIO para o cálculo de calorias. Se o usuário não especificar a duração, você DEVE estimar uma duração. Se você calcular uma duração total a partir de timestamps, distribua-a de forma inteligente entre os exercícios. A sua estimativa deve ser inteligente:
+          - Se o usuário descreve **um único exercício de musculação** (como "fiz supino 4x8"), estime uma duração curta, entre **10 a 15 minutos**. É irrealista que um único exercício dure mais que isso.
+          - Se o usuário descreve **vários exercícios de musculação** (2 ou mais), estime uma duração mais longa, como **45-60 minutos** no total e distribua.
           - Para **exercícios de cardio**, use estimativas comuns (ex: corrida de 5km dura cerca de 25-30 min, caminhada de 3km dura cerca de 30-35 min).
           - Se a sua estimativa for baseada em poucos dados, adicione uma nota sobre isso no campo \`notes\`. Ex: "Duração estimada com base em um único exercício."
           Se o usuário descreve um treino com uma data no passado (ex: "ontem treinei..."), a ação correta é 'log_workout', não 'show_history'. A sua tarefa é registrar o treino na data especificada.

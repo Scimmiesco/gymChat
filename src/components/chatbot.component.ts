@@ -148,9 +148,21 @@ export class ChatComponent {
         this.chatService.updateLastMessage(lastMessage => {
             switch(parsed.action) {
                 case 'log_workout':
-                    const newWorkout = this.workoutService.addWorkout(parsed.workout);
-                    lastMessage.type = 'workout_log';
-                    lastMessage.payload = newWorkout;
+                    // Check for the new multi-workout format
+                    if (parsed.workouts && Array.isArray(parsed.workouts)) {
+                        lastMessage.type = 'text'; // Keep the AI's summary as a plain text message
+
+                        // Add a new message with a card for each workout
+                        for (const workoutData of parsed.workouts) {
+                            const newWorkout = this.workoutService.addWorkout(workoutData);
+                            this.addMessage('model', 'workout_log', `Exercício '${newWorkout.name}' registrado.`, newWorkout);
+                        }
+                    } else if (parsed.workout) {
+                        // Handle the original single-workout format
+                        const newWorkout = this.workoutService.addWorkout(parsed.workout);
+                        lastMessage.type = 'workout_log';
+                        lastMessage.payload = newWorkout;
+                    }
                     addFollowUp = true;
                     break;
                 case 'show_history':
@@ -249,7 +261,7 @@ export class ChatComponent {
 
     private addMessage(role: 'model' | 'user', type: ChatMessage['type'], text?: string, payload?: any) {
         const newMessage: ChatMessage = {
-            id: Date.now(),
+            id: Date.now() + Math.random(), // Add random to avoid ID collision in fast multi-add
             role,
             type,
             text,
