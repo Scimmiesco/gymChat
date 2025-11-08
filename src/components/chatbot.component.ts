@@ -51,7 +51,7 @@ export class ChatComponent {
   totalWorkouts = this.workoutService.totalWorkouts;
   totalCalories = this.workoutService.totalCalories;
 
-  groupedWorkouts = computed<WorkoutGroup[]>(() => {
+  groupedWorkouts = computed((): WorkoutGroup[] => {
     const groups = new Map<string, Workout[]>();
     for (const workout of this.workouts()) {
       const date = workout.date;
@@ -100,6 +100,25 @@ export class ChatComponent {
 
     const workoutDate = new Date(dateString + "T12:00:00Z"); // Use noon UTC to avoid timezone issues
     return this.datePipe.transform(workoutDate, "dd/MM/yyyy") || dateString;
+  }
+
+  onKeydown(event: KeyboardEvent): void {
+    if (event.key === "Enter" && event.shiftKey) {
+      // Let the default behavior (new line) happen
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault(); // Prevent new line on Enter
+      this.sendMessage();
+    }
+  }
+
+  autoResize(target: EventTarget | null): void {
+    if (target) {
+      const element = target as HTMLTextAreaElement;
+      element.style.height = "auto"; // Reset height to recalculate
+      element.style.height = `${element.scrollHeight}px`;
+    }
   }
 
   async sendMessage(): Promise<void> {

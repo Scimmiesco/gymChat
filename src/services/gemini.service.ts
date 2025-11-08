@@ -207,7 +207,8 @@ export class AiService {
         ...history,
         { role: 'user', content: message }
       ],
-      stream: true,
+      stream: true,temperature: 0.2,  
+      max_tokens: 4096
     });
     
     return stream;

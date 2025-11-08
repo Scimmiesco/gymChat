@@ -158,22 +158,19 @@
   </div>
 
   <!-- Input Form -->
-  <footer class="p-3 bg-[#202c33] shrink-0">
-    <form (submit)="sendMessage()" class="flex items-center space-x-3">
-      <input
-        type="text"
+  <footer class="p-3 shrink-0">
+    <form (submit)="sendMessage()" class="flex items-end space-x-3">
+      <textarea
+        rows="1"
         [(ngModel)]="userInput"
         name="userInput"
-        placeholder="Digite seu treino..."
-        class="flex-1 bg-[#2a3942] rounded-full py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        placeholder="Digite seu treino... (Shift + Enter para nova linha)"
+        (keydown)="onKeydown($event)"
+        (input)="autoResize($event.target)"
+        class="flex-1 bg-[#2a3942] rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none max-h-32"
         [disabled]="isLoading()"
-        autocomplete="off"
-      />
-      <button
-        type="submit"
-        [disabled]="!userInput() || isLoading()"
-        class="bg-emerald-600 text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors"
-      >
+        autocomplete="off"></textarea>
+      <button type="submit" [disabled]="!userInput() || isLoading()" class="bg-emerald-600 text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors">
         <span class="text-xl -mr-1">➤</span>
       </button>
     </form>
