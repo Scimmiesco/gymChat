@@ -16,7 +16,7 @@ import { Workout } from "../models";
     <div
       class="flex flex-col space-around bg-slate-900/50 p-3 rounded-md min-h-[200px]"
     >
-      <div class="flex-1 flex justify-between items-start">
+      <div class="flex-1 flex justify-between items-start border-bottom border-1 border-red">
         <div>
           <h4 class="font-semibold text-emerald-400">{{ workout().name }}</h4>
           <p class="text-xs text-gray-400">

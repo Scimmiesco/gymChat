@@ -75,23 +75,11 @@
           ></app-workout-card>
         </div>
         } @case ('stats_summary') {
-        <div>
-          <p class="text-sm font-semibold mb-2">{{ message.text }}</p>
-          <div class="grid grid-cols-2 gap-2 mt-2">
-            <div class="bg-black/20 p-3 rounded-lg text-center">
-              <h4 class="text-xs text-gray-400">Total de Treinos</h4>
-              <p class="text-2xl font-bold">
-                {{ message.payload.totalWorkouts }}
-              </p>
-            </div>
-            <div class="bg-black/20 p-3 rounded-lg text-center">
-              <h4 class="text-xs text-gray-400">Calorias (Est.)</h4>
-              <p class="text-2xl font-bold">
-                {{ message.payload.totalCalories | number : "1.0-0" }}
-              </p>
-            </div>
-          </div>
-        </div>
+        <app-stats-summary-card
+          [title]="message.text!"
+          [stats]="message.payload"
+        >
+        </app-stats-summary-card>
         } @case ('history_summary') {
         <div>
           <p class="text-sm font-semibold mb-2">{{ message.text }}</p>
@@ -169,8 +157,13 @@
         (input)="autoResize($event.target)"
         class="flex-1 bg-[#2a3942] rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none max-h-32"
         [disabled]="isLoading()"
-        autocomplete="off"></textarea>
-      <button type="submit" [disabled]="!userInput() || isLoading()" class="bg-emerald-600 text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors">
+        autocomplete="off"
+      ></textarea>
+      <button
+        type="submit"
+        [disabled]="!userInput() || isLoading()"
+        class="bg-emerald-600 text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors"
+      >
         <span class="text-xl -mr-1">➤</span>
       </button>
     </form>

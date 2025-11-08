@@ -15,6 +15,7 @@ import { WorkoutService } from "../services/workout.service";
 import { ChatService } from "../services/chat.service";
 import { ChatMessage, Workout, USER_PROFILE } from "../models";
 import { WorkoutCardComponent } from "./workout-card.component";
+import { StatsSummaryCardComponent } from "./summary-card.component";
 
 interface WorkoutGroup {
   date: string;
@@ -25,7 +26,13 @@ interface WorkoutGroup {
 @Component({
   selector: "app-chat",
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, WorkoutCardComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DatePipe,
+    WorkoutCardComponent,
+    StatsSummaryCardComponent,
+  ],
   templateUrl: "./chatbot.component.html",
   providers: [DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -237,10 +244,42 @@ export class ChatComponent {
           lastMessage.type = "history_summary";
           break;
         case "show_summary":
+          const workouts = this.workouts();
+          const totalWorkouts = workouts.length;
+          const totalCalories = workouts.reduce(
+            (sum, w) => sum + (w.calories || 0),
+            0
+          );
+          const totalDuration = workouts.reduce(
+            (sum, w) => sum + (w.duration || 0),
+            0
+          );
+          const totalVolume = workouts
+            .filter((w) => w.type === "musculacao" && w.sets)
+            .reduce((total, w) => {
+              const workoutVolume = w.sets!.reduce(
+                (sum, set) => sum + (set.reps || 0) * (set.weight || 0),
+                0
+              );
+              return total + workoutVolume;
+            }, 0);
+          const totalDistance = workouts
+            .filter((w) => w.type === "cardio" && w.distance)
+            .reduce((sum, w) => sum + w.distance!, 0);
+
+          const typeDistribution = workouts.reduce((acc, w) => {
+            acc[w.type] = (acc[w.type] || 0) + 1;
+            return acc;
+          }, {} as { [key in "musculacao" | "cardio" | "isometrico"]?: number });
+
           lastMessage.type = "stats_summary";
           lastMessage.payload = {
-            totalWorkouts: this.totalWorkouts(),
-            totalCalories: this.totalCalories(),
+            totalWorkouts: totalWorkouts,
+            totalCalories: totalCalories,
+            totalDuration: totalDuration,
+            totalVolume: totalVolume,
+            totalDistance: totalDistance,
+            typeDistribution: typeDistribution,
           };
           break;
         case "show_profile":
@@ -389,3 +428,4 @@ export class ChatComponent {
     }, 0);
   }
 }
+
