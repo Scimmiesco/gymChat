@@ -99,15 +99,25 @@
           <div
             class="space-y-4 mt-2 max-h-80 overflow-y-auto pr-2 chat-container"
           >
-            @for (group of groupedWorkouts(); track group[0]) {
+            @for (group of groupedWorkouts(); track group.date) {
             <div>
-              <h5
-                class="font-bold p-2 rounded-md text-center text-xl mb-2 sticky top-0 backdrop-blur-sm z-10 bg-emerald-600/50"
+              <div
+                class="flex justify-between sticky py-1 px-3 rounded-md text-center top-0 backdrop-blur-sm z-10 bg-emerald-600/50"
               >
-                {{ getFriendlyDateHeader(group[0]) }}
-              </h5>
+                <h5 class="font-bold text-xl">
+                  {{ getFriendlyDateHeader(group.date) }}
+                </h5>
+                <span
+                  >@if (group.totalCalories > 0) {
+                  <span class="text-sm font-bold text-emerald-300"
+                    >🔥 ~{{ group.totalCalories | number : "1.0-0" }} cals</span
+                  >
+                  }</span
+                >
+              </div>
+
               <div class="flex flex-col gap-2">
-                @for (workout of group[1]; track workout.id) {
+                @for (workout of group.workouts; track workout.id) {
                 <app-workout-card
                   [workout]="workout"
                   (deleteRequest)="deleteWorkout($event)"
@@ -134,7 +144,7 @@
             <p><strong>Peso:</strong> {{ message.payload.weight }} kg</p>
             <p>
               <strong>TMB (Est.):</strong>
-              {{ message.payload.bmr | number : "1.0-0" }} kcal/dia
+              {{ message.payload.bmr | number : "1.0-0" }} cal/dia
             </p>
           </div>
         </div>
@@ -226,7 +236,7 @@
         <p class="border-t border-gray-700 pt-2 mt-2">
           <strong>TMB (Est.):</strong>
           <span class="text-emerald-400 font-medium"
-            >{{ userProfile.bmr | number : "1.0-0" }} kcal/dia</span
+            >{{ userProfile.bmr | number : "1.0-0" }} cal/dia</span
           >
         </p>
       </div>
@@ -299,3 +309,4 @@
   (change)="importData($event)"
   accept=".json"
 />
+
