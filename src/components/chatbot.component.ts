@@ -49,6 +49,7 @@ export class ChatComponent {
   showProfile = signal(false);
   showSettings = signal(false);
   apiKeyInput = signal(this.chatService.apiKey() ?? "");
+  showScrollButton = signal(false);
 
   chatContainer = viewChild<ElementRef<HTMLDivElement>>("chatContainer");
   importFileInput = viewChild<ElementRef<HTMLInputElement>>("importFileInput");
@@ -401,6 +402,26 @@ export class ChatComponent {
     this.chatService.addMessage(newMessage);
   }
 
+    onChatScroll(event: Event): void {
+    const el = event.target as HTMLDivElement;
+    if (!el) return;
+  
+    const threshold = 150; // Pixels from bottom to show button
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  
+    this.showScrollButton.set(!isAtBottom);
+  }
+
+  smoothScrollToBottom(): void {
+    const el = this.chatContainer()?.nativeElement;
+    if (el) {
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }
+  
   private extractJson(text: string): any | null {
     const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
     const match = text.match(jsonRegex);

@@ -1,5 +1,5 @@
 <div
-  class="flex flex-col h-full w-full max-w-4xl mx-auto bg-gray-800/50 shadow-2xl"
+  class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-gray-800/50 shadow-2xl"
 >
   <!-- Header -->
   <header class="flex items-center justify-between p-3 bg-[#202c33] shrink-0">
@@ -13,22 +13,40 @@
         <span>👤</span>
       </div>
       <div>
-        <h3 class="font-semibold">Meu Diário de Treino</h3>
-        <p class="text-xs text-gray-400">online</p>
+        <h3 class="font-semibold">Gymini</h3>
       </div>
     </div>
-    <button
-      (click)="showSettings.set(true)"
-      class="text-2xl text-gray-400 hover:text-white transition-colors p-2 rounded-full"
-    >
-      <span>⚙️</span>
-    </button>
+
+    <div class="flex items-center space-x-1 sm:space-x-2">
+      <button
+        (click)="sendQuickAction('Ver meu histórico')"
+        class="text-2xl text-gray-400 hover:text-white transition-colors p-2 rounded-full"
+        title="Ver Histórico"
+      >
+        <span>📜</span>
+      </button>
+      <button
+        (click)="sendQuickAction('Mostrar resumo')"
+        class="text-2xl text-gray-400 hover:text-white transition-colors p-2 rounded-full"
+        title="Mostrar Resumo"
+      >
+        <span>📊</span>
+      </button>
+      <button
+        (click)="showSettings.set(true)"
+        class="text-2xl text-gray-400 hover:text-white transition-colors p-2 rounded-full"
+        title="Configurações"
+      >
+        <span>⚙️</span>
+      </button>
+    </div>
   </header>
 
   <!-- Messages -->
   <div
     #chatContainer
-    class="flex-1 p-2 sm:p-6 space-y-4 overflow-y-auto min-w-1/2 chat-container"
+    (scroll)="onChatScroll($event)"
+    class="flex-1 p-4 space-y-4 overflow-y-auto min-w-1/2 chat-container relative pb-20"
   >
     @for (message of messages(); track message.id) {
     <div
@@ -146,157 +164,168 @@
   </div>
 
   <!-- Input Form -->
-  <footer class="p-3 shrink-0">
+  <footer class="absolute bottom-0 left-0 right-0 p-2">
     <form (submit)="sendMessage()" class="flex items-end space-x-3">
       <textarea
         rows="1"
         [(ngModel)]="userInput"
         name="userInput"
-        placeholder="Digite seu treino... (Shift + Enter para nova linha)"
+        placeholder="Digite seu treino..."
         (keydown)="onKeydown($event)"
         (input)="autoResize($event.target)"
-        class="flex-1 bg-[#2a3942] rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none max-h-32"
+        class="flex-1 w-full bg-[#2a394275] backdrop-blur-sm rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none max-h-32"
         [disabled]="isLoading()"
         autocomplete="off"
       ></textarea>
       <button
         type="submit"
         [disabled]="!userInput() || isLoading()"
-        class="bg-emerald-600 text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors"
+        class="bg-emerald-600/50 backdrop-blur-sm text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors"
       >
         <span class="text-xl -mr-1">➤</span>
       </button>
     </form>
+
+    <!-- Scroll to bottom button -->
+    @if (showScrollButton()) {
+    <button
+      (click)="smoothScrollToBottom()"
+      class="absolute bottom-20 right-4 z-50 bg-emerald-600/50 backdrop-blur-sm text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-emerald-700 transition-all animate-fade-in"
+      title="Ir para mensagens recentes"
+    >
+      <span class="text-2xl">⬇️</span>
+    </button>
+    }
   </footer>
-</div>
 
-<!-- Profile Modal -->
-@if (showProfile()) {
-<div
-  (click)="showProfile.set(false)"
-  class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in"
->
+  <!-- Profile Modal -->
+  @if (showProfile()) {
   <div
-    (click)="$event.stopPropagation()"
-    class="bg-gray-800 rounded-2xl p-6 w-full max-w-sm border border-gray-700"
+    (click)="showProfile.set(false)"
+    class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in"
   >
-    <div class="flex flex-col items-center text-center">
-      <div
-        class="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center text-5xl mb-4"
-      >
-        <span>👤</span>
+    <div
+      (click)="$event.stopPropagation()"
+      class="bg-gray-800 rounded-2xl p-6 w-full max-w-sm border border-gray-700"
+    >
+      <div class="flex flex-col items-center text-center">
+        <div
+          class="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center text-5xl mb-4"
+        >
+          <span>👤</span>
+        </div>
+        <h2 class="text-2xl font-bold">Perfil do Usuário</h2>
+        <p class="text-gray-400">
+          Estes dados são usados para calcular as estimativas.
+        </p>
+        <div
+          class="text-left space-y-2 mt-6 w-full bg-gray-900/50 p-4 rounded-lg"
+        >
+          <p>
+            <strong>Físico:</strong>
+            <span class="text-emerald-400 font-medium">{{
+              userProfile.physique
+            }}</span>
+          </p>
+          <p>
+            <strong>Idade:</strong>
+            <span class="text-emerald-400 font-medium"
+              >{{ userProfile.age }} anos</span
+            >
+          </p>
+          <p>
+            <strong>Altura:</strong>
+            <span class="text-emerald-400 font-medium"
+              >{{ userProfile.height }} cm</span
+            >
+          </p>
+          <p>
+            <strong>Peso:</strong>
+            <span class="text-emerald-400 font-medium"
+              >{{ userProfile.weight }} kg</span
+            >
+          </p>
+          <p>
+            <strong>Sexo:</strong>
+            <span class="text-emerald-400 font-medium">{{
+              userProfile.gender
+            }}</span>
+          </p>
+          <p class="border-t border-gray-700 pt-2 mt-2">
+            <strong>TMB (Est.):</strong>
+            <span class="text-emerald-400 font-medium"
+              >{{ userProfile.bmr | number : "1.0-0" }} cal/dia</span
+            >
+          </p>
+        </div>
+        <button
+          (click)="showProfile.set(false)"
+          class="mt-6 bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-emerald-700 transition-colors"
+        >
+          Fechar
+        </button>
       </div>
-      <h2 class="text-2xl font-bold">Perfil do Usuário</h2>
-      <p class="text-gray-400">
-        Estes dados são usados para calcular as estimativas.
-      </p>
-      <div
-        class="text-left space-y-2 mt-6 w-full bg-gray-900/50 p-4 rounded-lg"
-      >
-        <p>
-          <strong>Físico:</strong>
-          <span class="text-emerald-400 font-medium">{{
-            userProfile.physique
-          }}</span>
-        </p>
-        <p>
-          <strong>Idade:</strong>
-          <span class="text-emerald-400 font-medium"
-            >{{ userProfile.age }} anos</span
-          >
-        </p>
-        <p>
-          <strong>Altura:</strong>
-          <span class="text-emerald-400 font-medium"
-            >{{ userProfile.height }} cm</span
-          >
-        </p>
-        <p>
-          <strong>Peso:</strong>
-          <span class="text-emerald-400 font-medium"
-            >{{ userProfile.weight }} kg</span
-          >
-        </p>
-        <p>
-          <strong>Sexo:</strong>
-          <span class="text-emerald-400 font-medium">{{
-            userProfile.gender
-          }}</span>
-        </p>
-        <p class="border-t border-gray-700 pt-2 mt-2">
-          <strong>TMB (Est.):</strong>
-          <span class="text-emerald-400 font-medium"
-            >{{ userProfile.bmr | number : "1.0-0" }} cal/dia</span
-          >
-        </p>
-      </div>
-      <button
-        (click)="showProfile.set(false)"
-        class="mt-6 bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-emerald-700 transition-colors"
-      >
-        Fechar
-      </button>
     </div>
   </div>
-</div>
-}
+  }
 
-<!-- Settings Modal -->
-@if (showSettings()) {
-<div
-  (click)="showSettings.set(false)"
-  class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in"
->
+  <!-- Settings Modal -->
+  @if (showSettings()) {
   <div
-    (click)="$event.stopPropagation()"
-    class="bg-gray-800 rounded-2xl p-6 w-full max-w-sm border border-gray-700"
+    (click)="showSettings.set(false)"
+    class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in"
   >
-    <h2 class="text-2xl font-bold text-center">Configurações</h2>
-    <p class="text-gray-400 text-center mt-1 mb-6">
-      Gerencie suas chaves de API.
-    </p>
-
-    <div class="space-y-2">
-      <label for="apiKey" class="text-sm font-medium text-gray-300"
-        >Chave de API DeepSeek</label
-      >
-      <input
-        id="apiKey"
-        type="password"
-        [(ngModel)]="apiKeyInput"
-        name="apiKeyInput"
-        placeholder="Insira sua chave de API aqui"
-        class="w-full bg-[#2a3942] rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-      />
-      <p class="text-xs text-gray-500">
-        Sua chave é salva localmente e nunca sai do seu navegador.
+    <div
+      (click)="$event.stopPropagation()"
+      class="bg-gray-800 rounded-2xl p-6 w-full max-w-sm border border-gray-700"
+    >
+      <h2 class="text-2xl font-bold text-center">Configurações</h2>
+      <p class="text-gray-400 text-center mt-1 mb-6">
+        Gerencie suas chaves de API.
       </p>
-    </div>
 
-    <div class="flex items-center gap-4 mt-6">
-      <button
-        (click)="showSettings.set(false)"
-        class="bg-gray-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-gray-700 transition-colors"
-      >
-        Cancelar
-      </button>
-      <button
-        (click)="saveSettings()"
-        [disabled]="!apiKeyInput()"
-        class="bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-emerald-700 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-      >
-        Salvar
-      </button>
+      <div class="space-y-2">
+        <label for="apiKey" class="text-sm font-medium text-gray-300"
+          >Chave de API DeepSeek</label
+        >
+        <input
+          id="apiKey"
+          type="password"
+          [(ngModel)]="apiKeyInput"
+          name="apiKeyInput"
+          placeholder="Insira sua chave de API aqui"
+          class="w-full bg-[#2a3942] rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+        <p class="text-xs text-gray-500">
+          Sua chave é salva localmente e nunca sai do seu navegador.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-4 mt-6">
+        <button
+          (click)="showSettings.set(false)"
+          class="bg-gray-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-gray-700 transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          (click)="saveSettings()"
+          [disabled]="!apiKeyInput()"
+          class="bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-emerald-700 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+        >
+          Salvar
+        </button>
+      </div>
     </div>
   </div>
-</div>
-}
+  }
 
-<input
-  type="file"
-  #importFileInput
-  class="hidden"
-  (change)="importData($event)"
-  accept=".json"
-/>
+  <input
+    type="file"
+    #importFileInput
+    class="hidden"
+    (change)="importData($event)"
+    accept=".json"
+  />
+</div>
 
