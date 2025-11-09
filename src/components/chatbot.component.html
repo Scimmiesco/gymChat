@@ -1,14 +1,14 @@
 <div
-  class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-gray-800/50 shadow-2xl"
+  class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-slate-800/50 shadow-2xl"
 >
   <!-- Header -->
-  <header class="flex items-center justify-between p-3 bg-[#202c33] shrink-0">
+  <header class="flex items-center justify-between p-3 bg-slate-900 shrink-0">
     <div
       (click)="showProfile.set(true)"
       class="flex items-center cursor-pointer"
     >
       <div
-        class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-xl mr-4"
+        class="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center text-xl mr-4"
       >
         <span>👤</span>
       </div>
@@ -20,21 +20,21 @@
     <div class="flex items-center space-x-1 sm:space-x-2">
       <button
         (click)="sendQuickAction('Ver meu histórico')"
-        class="text-2xl text-gray-400 hover:text-white transition-colors p-2 rounded-full"
+        class="text-2xl transition-colors p-2 rounded-full"
         title="Ver Histórico"
       >
         <span>📜</span>
       </button>
       <button
         (click)="sendQuickAction('Mostrar resumo')"
-        class="text-2xl text-gray-400 hover:text-white transition-colors p-2 rounded-full"
+        class="text-2xl transition-colors p-2 rounded-full"
         title="Mostrar Resumo"
       >
         <span>📊</span>
       </button>
       <button
         (click)="showSettings.set(true)"
-        class="text-2xl text-gray-400 hover:text-white transition-colors p-2 rounded-full"
+        class="text-2xl transition-colors p-2 rounded-full"
         title="Configurações"
       >
         <span>⚙️</span>
@@ -54,18 +54,18 @@
       [class.justify-end]="message.role === 'user'"
     >
       <div
-        class="w-11/12 md:w-3/4 rounded-md p-2 relative"
+        class="w-11/12 md:w-3/4 rounded-md p-2 relative backdrop-blur-sm border-2 border-slate-900"
         [class.chat-bubble-user]="message.role === 'user'"
         [class.chat-bubble-model]="message.role === 'model'"
       >
         @switch (message.type) { @case ('loading') {
         <div class="flex items-center space-x-2 py-1">
-          <div class="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+          <div class="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
           <div
-            class="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.2s]"
+            class="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:0.2s]"
           ></div>
           <div
-            class="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.4s]"
+            class="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:0.4s]"
           ></div>
         </div>
         } @case ('error') {
@@ -108,18 +108,18 @@
             @for (group of groupedWorkouts(); track group.date) {
             <div>
               <div
-                class="flex justify-between sticky py-1 px-3 rounded-md text-center top-0 backdrop-blur-sm z-10 bg-emerald-600/50"
+                class="mb-2 flex justify-between sticky py-1 px-3 rounded-md border-2 border-emerald-600 text-center top-0 backdrop-blur-sm z-10 bg-emerald-600/75"
               >
                 <h5 class="font-bold text-xl">
                   {{ getFriendlyDateHeader(group.date) }}
                 </h5>
                 <span
                   >@if (group.totalCalories > 0) {
-                  <span class="text-sm font-bold text-emerald-300"
-                    >🔥 ~{{ group.totalCalories | number : "1.0-0" }} cals</span
+                  <span class="text-md font-bold text-emerald-200"
+                    >~{{ group.totalCalories | number : "1.0-0" }} cals</span
                   >
-                  }</span
-                >
+                  }🔥
+                </span>
               </div>
 
               <div class="flex flex-col gap-2">
@@ -135,15 +135,13 @@
             }
           </div>
           } @else {
-          <p class="text-sm text-gray-400 italic mt-2">
-            Nenhum treino no histórico.
-          </p>
+          <p class="text-sm italic mt-2">Nenhum treino no histórico.</p>
           }
         </div>
         } @case ('user_profile') {
         <div>
           <p class="text-sm font-semibold mb-2">{{ message.text }}</p>
-          <div class="bg-black/20 p-3 rounded-lg space-y-1 text-sm">
+          <div class="bg-slate-900/20 p-3 rounded-md space-y-1 text-sm">
             <p><strong>Físico:</strong> {{ message.payload.physique }}</p>
             <p><strong>Idade:</strong> {{ message.payload.age }} anos</p>
             <p><strong>Altura:</strong> {{ message.payload.height }} cm</p>
@@ -155,7 +153,7 @@
           </div>
         </div>
         } }
-        <div class="text-xs text-gray-400 text-right mt-1">
+        <div class="text-xs text-right mt-1">
           {{ message.timestamp | date : "HH:mm" }}
         </div>
       </div>
@@ -173,14 +171,14 @@
         placeholder="Digite seu treino..."
         (keydown)="onKeydown($event)"
         (input)="autoResize($event.target)"
-        class="flex-1 w-full bg-[#2a394275] backdrop-blur-sm rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none max-h-32"
+        class="flex-1 w-full bg-[#2a394275] backdrop-blur-sm rounded-md py-2 px-4 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none max-h-32"
         [disabled]="isLoading()"
         autocomplete="off"
       ></textarea>
       <button
         type="submit"
         [disabled]="!userInput() || isLoading()"
-        class="bg-emerald-600/50 backdrop-blur-sm text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-gray-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors"
+        class="bg-emerald-600/50 backdrop-blur-sm rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-slate-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors"
       >
         <span class="text-xl -mr-1">➤</span>
       </button>
@@ -190,7 +188,7 @@
     @if (showScrollButton()) {
     <button
       (click)="smoothScrollToBottom()"
-      class="absolute bottom-20 right-4 z-50 bg-emerald-600/50 backdrop-blur-sm text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-emerald-700 transition-all animate-fade-in"
+      class="absolute bottom-20 right-4 z-50 bg-emerald-600/50 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-emerald-700 transition-all animate-fade-in"
       title="Ir para mensagens recentes"
     >
       <span class="text-2xl">⬇️</span>
@@ -202,24 +200,22 @@
   @if (showProfile()) {
   <div
     (click)="showProfile.set(false)"
-    class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in"
+    class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 animate-fade-in"
   >
     <div
       (click)="$event.stopPropagation()"
-      class="bg-gray-800 rounded-2xl p-6 w-full max-w-sm border border-gray-700"
+      class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700"
     >
       <div class="flex flex-col items-center text-center">
         <div
-          class="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center text-5xl mb-4"
+          class="w-20 h-20 rounded-full bg-slate-600 flex items-center justify-center text-5xl mb-4"
         >
           <span>👤</span>
         </div>
         <h2 class="text-2xl font-bold">Perfil do Usuário</h2>
-        <p class="text-gray-400">
-          Estes dados são usados para calcular as estimativas.
-        </p>
+        <p class="">Estes dados são usados para calcular as estimativas.</p>
         <div
-          class="text-left space-y-2 mt-6 w-full bg-gray-900/50 p-4 rounded-lg"
+          class="text-left space-y-2 mt-6 w-full bg-slate-900/50 p-4 rounded-md"
         >
           <p>
             <strong>Físico:</strong>
@@ -251,7 +247,7 @@
               userProfile.gender
             }}</span>
           </p>
-          <p class="border-t border-gray-700 pt-2 mt-2">
+          <p class="border-t border-slate-700 pt-2 mt-2">
             <strong>TMB (Est.):</strong>
             <span class="text-emerald-400 font-medium"
               >{{ userProfile.bmr | number : "1.0-0" }} cal/dia</span
@@ -260,7 +256,7 @@
         </div>
         <button
           (click)="showProfile.set(false)"
-          class="mt-6 bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-emerald-700 transition-colors"
+          class="mt-6 bg-emerald-600 font-bold py-2 px-6 rounded-md w-full hover:bg-emerald-700 transition-colors"
         >
           Fechar
         </button>
@@ -273,19 +269,17 @@
   @if (showSettings()) {
   <div
     (click)="showSettings.set(false)"
-    class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in"
+    class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 animate-fade-in"
   >
     <div
       (click)="$event.stopPropagation()"
-      class="bg-gray-800 rounded-2xl p-6 w-full max-w-sm border border-gray-700"
+      class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700"
     >
       <h2 class="text-2xl font-bold text-center">Configurações</h2>
-      <p class="text-gray-400 text-center mt-1 mb-6">
-        Gerencie suas chaves de API.
-      </p>
+      <p class="text-center mt-1 mb-6">Gerencie suas chaves de API.</p>
 
       <div class="space-y-2">
-        <label for="apiKey" class="text-sm font-medium text-gray-300"
+        <label for="apiKey" class="text-sm font-medium text-slate-300"
           >Chave de API DeepSeek</label
         >
         <input
@@ -294,9 +288,9 @@
           [(ngModel)]="apiKeyInput"
           name="apiKeyInput"
           placeholder="Insira sua chave de API aqui"
-          class="w-full bg-[#2a3942] rounded-lg py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          class="w-full bg-[#2a3942] rounded-md py-2 px-4 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
-        <p class="text-xs text-gray-500">
+        <p class="text-xs ">
           Sua chave é salva localmente e nunca sai do seu navegador.
         </p>
       </div>
@@ -304,14 +298,14 @@
       <div class="flex items-center gap-4 mt-6">
         <button
           (click)="showSettings.set(false)"
-          class="bg-gray-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-gray-700 transition-colors"
+          class="bg-slate-600 font-bold py-2 px-6 rounded-md w-full hover:bg-slate-700 transition-colors"
         >
           Cancelar
         </button>
         <button
           (click)="saveSettings()"
           [disabled]="!apiKeyInput()"
-          class="bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg w-full hover:bg-emerald-700 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+          class="bg-emerald-600 font-bold py-2 px-6 rounded-md w-full hover:bg-emerald-700 transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed"
         >
           Salvar
         </button>

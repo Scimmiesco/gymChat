@@ -1,0 +1,49 @@
+{
+  "hash": "6f1930a5",
+  "configHash": "c6ee6dc9",
+  "lockfileHash": "78651969",
+  "browserHash": "de8962d8",
+  "optimized": {
+    "@angular/common": {
+      "src": "../../../../../../node_modules/@angular/common/fesm2022/common.mjs",
+      "file": "@angular_common.js",
+      "fileHash": "b7d19480",
+      "needsInterop": false
+    },
+    "@angular/core": {
+      "src": "../../../../../../node_modules/@angular/core/fesm2022/core.mjs",
+      "file": "@angular_core.js",
+      "fileHash": "b9140849",
+      "needsInterop": false
+    },
+    "@angular/forms": {
+      "src": "../../../../../../node_modules/@angular/forms/fesm2022/forms.mjs",
+      "file": "@angular_forms.js",
+      "fileHash": "1fdefc9d",
+      "needsInterop": false
+    },
+    "@angular/platform-browser": {
+      "src": "../../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
+      "file": "@angular_platform-browser.js",
+      "fileHash": "de6479ee",
+      "needsInterop": false
+    },
+    "openai": {
+      "src": "../../../../../../node_modules/openai/index.mjs",
+      "file": "openai.js",
+      "fileHash": "009301cf",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-AUCNJE6E": {
+      "file": "chunk-AUCNJE6E.js"
+    },
+    "chunk-TEQND2CF": {
+      "file": "chunk-TEQND2CF.js"
+    },
+    "chunk-GOMI4DH3": {
+      "file": "chunk-GOMI4DH3.js"
+    }
+  }
+}
