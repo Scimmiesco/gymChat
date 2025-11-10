@@ -1,29 +1,238 @@
-import { Component, ChangeDetectionStrategy, input } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import {
+  Component,
+  ChangeDetectionStrategy,
+  input,
+  computed,
+} from "@angular/core";
+// DecimalPipe é necessário para formatKilo e o pipe 'number'
+import { CommonModule, DecimalPipe } from "@angular/common";
 
-export interface StatsSummary {
+// NOVAS INTERFACES (do código objetivo)
+export interface WeekStats {
   totalWorkouts: number;
   totalCalories: number;
   totalDuration: number;
   totalVolume: number;
   totalDistance: number;
+}
+
+export interface StatsSummary {
+  overall: WeekStats; // 'overall' agora agrupa os totais
+  thisWeek?: WeekStats; // Novo
+  lastWeek?: WeekStats; // Novo
   typeDistribution: {
     [key in "musculacao" | "cardio" | "isometrico"]?: number;
+  };
+  consistency?: {
+    // Novo
+    daysInLast7: number;
   };
 }
 
 @Component({
   selector: "app-stats-summary-card",
   standalone: true,
-  imports: [CommonModule],
+  // Adicionado DecimalPipe aos imports
+  imports: [CommonModule, DecimalPipe],
   template: `
     <div class="flex flex-col gap-2">
       <p class="tracking-wide">{{ title() }}</p>
 
-      <!-- Main Stats -->
+      @if (stats().thisWeek; as thisWeek) {
+      <div class="border-t-2 border-slate-900/50 p-2">
+        <h3
+          class="font-bold text-base mb-4 text-emerald-300 flex items-center gap-2"
+        >
+          <span>📊</span>
+          <span>Desempenho da Semana</span>
+        </h3>
+        <div class="space-y-4 text-sm">
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-gray-300 flex items-center gap-2"
+              >🏋️ Treinos</span
+            >
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-lg text-white">{{
+                thisWeek.totalWorkouts
+              }}</span>
+              @let change = getPercentageChange(thisWeek.totalWorkouts, stats().lastWeek?.totalWorkouts);
+              <div
+                class="text-xs font-bold w-16 text-center rounded-full px-1 py-0.5"
+                
+                [class.bg-green-500]="change !== null && change > 0"
+                [class.text-green-400]="change !== null && change > 0"
+                [class.bg-red-500]="change !== null && change < 0"
+                [class.text-red-400]="change !== null && change < 0"
+                [class.bg-gray-600]="change !== null && change === 0"
+                [class.text-gray-400]="change !== null && change === 0"
+                [class.bg-blue-500]="change === Infinity"
+                [class.text-blue-400]="change === Infinity"
+                [class.bg-gray-700/50]="change === null"
+                [class.text-gray-500]="change === null"
+              >
+                @if (change === null) {
+                <span>-</span>
+                } @else if (change === Infinity) {
+                <span>Novo!</span>
+                } @else if (change !== 0) {
+                <span>
+                  @if (change > 0) { ▲ } @else { ▼ } {{ change | number : "1.0-0"
+                  }}%
+                </span>
+                } @else {
+                <span>--</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-gray-300 flex items-center gap-2"
+              >⏱️ Duração</span
+            >
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-lg text-white"
+                >{{ thisWeek.totalDuration }}
+                <span class="text-sm font-normal">min</span></span
+              >
+              @let change = getPercentageChange(thisWeek.totalDuration, stats().lastWeek?.totalDuration);
+              <div
+                class="text-xs font-bold w-16 text-center rounded-full px-1 py-0.5"
+                [class.bg-green-500]="change !== null && change > 0"
+                [class.text-green-400]="change !== null && change > 0"
+                [class.bg-red-500]="change !== null && change < 0"
+                [class.text-red-400]="change !== null && change < 0"
+                [class.bg-gray-600]="change !== null && change === 0"
+                [class.text-gray-400]="change !== null && change === 0"
+                [class.bg-blue-500]="change === Infinity"
+                [class.text-blue-400]="change === Infinity"
+                [class.bg-gray-700]="change === null"
+                [class.text-gray-500]="change === null"
+              >
+                @if (change === null) {
+                <span>-</span>
+                } @else if (change === Infinity) {
+                <span>Novo!</span>
+                } @else if (change !== 0) {
+                <span>
+                  @if (change > 0) { ▲ } @else { ▼ } {{ change | number : "1.0-0"
+                  }}%
+                </span>
+                } @else {
+                <span>--</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-gray-300 flex items-center gap-2"
+              >🔥 Calorias</span
+            >
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-lg text-emerald-400"
+                >~{{ thisWeek.totalCalories | number : "1.0-0" }}</span
+              >
+              @let change = getPercentageChange(thisWeek.totalCalories, stats().lastWeek?.totalCalories);
+              <div
+                class="text-xs font-bold w-16 text-center rounded-full px-1 py-0.5"
+                [class.bg-green-500]="change !== null && change > 0"
+                [class.text-green-400]="change !== null && change > 0"
+                [class.bg-red-500]="change !== null && change < 0"
+                [class.text-red-400]="change !== null && change < 0"
+                [class.bg-gray-600]="change !== null && change === 0"
+                [class.text-gray-400]="change !== null && change === 0"
+                [class.bg-blue-500]="change === Infinity"
+                [class.text-blue-400]="change === Infinity"
+                [class.bg-gray-700]="change === null"
+                [class.text-gray-500]="change === null"
+              >
+                @if (change === null) {
+                <span>-</span>
+                } @else if (change === Infinity) {
+                <span>Novo!</span>
+                } @else if (change !== 0) {
+                <span>
+                  @if (change > 0) { ▲ } @else { ▼ } {{ change | number : "1.0-0"
+                  }}%
+                </span>
+                } @else {
+                <span>--</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          @if(thisWeek.totalVolume > 0) {
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-gray-300 flex items-center gap-2"
+              >⚖️ Volume</span
+            >
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-lg text-white"
+                >{{ formatKilo(thisWeek.totalVolume) }}
+                <span class="text-sm font-normal">kg</span></span
+              >
+              @let change = getPercentageChange(thisWeek.totalVolume, stats().lastWeek?.totalVolume);
+              <div
+                class="text-xs font-bold w-16 text-center rounded-full px-1 py-0.5"
+                [class.bg-green-500]="change !== null && change > 0"
+                [class.text-green-400]="change !== null && change > 0"
+                [class.bg-red-500]="change !== null && change < 0"
+                [class.text-red-400]="change !== null && change < 0"
+                [class.bg-gray-600]="change !== null && change === 0"
+                [class.text-gray-400]="change !== null && change === 0"
+                [class.bg-blue-500]="change === Infinity"
+                [class.text-blue-400]="change === Infinity"
+                [class.bg-gray-700]="change === null"
+                [class.text-gray-500]="change === null"
+              >
+                @if (change === null) {
+                <span>-</span>
+                } @else if (change === Infinity) {
+                <span>Novo!</span>
+                } @else if (change !== 0) {
+                <span>
+                  @if (change > 0) { ▲ } @else { ▼ } {{ change | number : "1.0-0"
+                  }}%
+                </span>
+                } @else {
+                <span>--</span>
+                }
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      @if (stats().consistency; as consistency) {
+      <div class="border-t-2 border-slate-900/50 p-2">
+        <h3
+          class="font-bold text-base mb-3 text-cyan-300 flex items-center gap-2"
+        >
+          <span>🗓️</span>
+          <span>Consistência (Últimos 7 dias)</span>
+        </h3>
+        <div class="flex justify-center items-center gap-2 py-2">
+          @for (day of [1,2,3,4,5,6,7]; track day) {
+          <div
+            class="w-5 h-5 rounded-full"
+            [class.bg-cyan-400]="day <= consistency.daysInLast7"
+            [class.bg-gray-700]="day > consistency.daysInLast7"
+          ></div>
+          }
+        </div>
+        <p class="text-center text-xs text-gray-400 mt-1">
+          {{ consistency.daysInLast7 }} de 7 dias com treino.
+        </p>
+      </div>
+      }
+
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2 rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">🏋️‍♂️</div>
           <h4
@@ -31,10 +240,10 @@ export interface StatsSummary {
           >
             Treinos
           </h4>
-          <p class="text-xl font-bold">{{ stats().totalWorkouts }}</p>
+          <p class="text-xl font-bold">{{ stats().overall.totalWorkouts }}</p>
         </div>
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2 rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">🔥</div>
           <h4
@@ -43,11 +252,11 @@ export interface StatsSummary {
             Calorias
           </h4>
           <p class="text-xl font-bold text-emerald-400">
-            ~{{ stats().totalCalories | number : "1.0-0" }}
+            ~{{ formatKilo(stats().overall.totalCalories) }}
           </p>
         </div>
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2 rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">⏱️</div>
           <h4
@@ -56,13 +265,13 @@ export interface StatsSummary {
             Tempo
           </h4>
           <p class="text-xl font-bold">
-            {{ stats().totalDuration }}
-            <span class="text-base font-normal">min</span>
+            {{ (stats().overall.totalDuration / 60) | number : "1.0-1"
+            }}<span class="text-base font-normal">h</span>
           </p>
         </div>
-        @if (stats().totalVolume > 0) {
+        @if (stats().overall.totalVolume > 0) {
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2 rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">💪</div>
           <h4
@@ -71,13 +280,13 @@ export interface StatsSummary {
             Volume
           </h4>
           <p class="text-xl font-bold">
-            {{ stats().totalVolume | number : "1.0-0" }}
-            <span class="text-base font-normal">kg</span>
+            {{ formatKilo(stats().overall.totalVolume)
+            }}<span class="text-base font-normal">kg</span>
           </p>
         </div>
-        } @if (stats().totalDistance > 0) {
+        } @if (stats().overall.totalDistance > 0) {
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2 rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">🏃‍♂️</div>
           <h4
@@ -86,67 +295,121 @@ export interface StatsSummary {
             Distância
           </h4>
           <p class="text-xl font-bold">
-            {{ stats().totalDistance | number : "1.1-1" }}
-            <span class="text-base font-normal">km</span>
+            {{ stats().overall.totalDistance | number : "1.1-1"
+            }}<span class="text-base font-normal">km</span>
           </p>
         </div>
         }
       </div>
 
-      <!-- Distribution Section -->
-      @if (stats().totalWorkouts > 0 && stats().typeDistribution) {
       <div class="border-t-2 border-slate-900/50 p-2">
-        @let dist = stats().typeDistribution; @let total =
-        stats().totalWorkouts;
+        <h3
+          class="font-bold text-base mb-4 text-amber-300 flex items-center gap-2"
+        >
+          <span>🎯</span>
+          <span>Distribuição de Foco (Total)</span>
+        </h3>
+
+        @let dist = stats().typeDistribution;
         <div class="space-y-3 text-sm">
           @if(dist.musculacao) {
           <div>
-            <div class="flex justify-between mb-1.5 font-bold">
-              <span>Musculação</span>
-              <span class="font-mono">{{ dist.musculacao }}</span>
+            <div class="flex justify-between mb-1 text-xs font-semibold">
+              <span class="text-gray-300">💪 Musculação</span>
+              <span class="text-gray-400"
+                >{{ dist.musculacao }} treinos</span
+              >
             </div>
-            <div class="w-full bg-slate-900  h-4 p-0.5 rounded-sm">
+            <div class="w-full bg-slate-900 h-4 p-0.5 rounded-sm">
               <div
                 class="bg-emerald-600 h-full rounded-sm"
-                [style.width]="(dist.musculacao / total) * 100 + '%'"
+                [style.width]="getDistributionPercentage('musculacao') + '%'"
               ></div>
             </div>
           </div>
           } @if(dist.cardio) {
           <div>
-            <div class="flex justify-between mb-1.5 font-bold">
-              <span>Cardio</span>
-              <span class="font-mono">{{ dist.cardio }}</span>
+            <div class="flex justify-between mb-1 text-xs font-semibold">
+              <span class="text-gray-300">🏃 Cardio</span>
+              <span class="text-gray-400">{{ dist.cardio }} treinos</span>
             </div>
-            <div class="w-full bg-slate-900  h-4 p-0.5 rounded-sm">
+            <div class="w-full bg-slate-900 h-4 p-0.5 rounded-sm">
               <div
                 class="bg-sky-500 h-full rounded-sm"
-                [style.width]="(dist.cardio / total) * 100 + '%'"
+                [style.width]="getDistributionPercentage('cardio') + '%'"
               ></div>
             </div>
           </div>
           } @if(dist.isometrico) {
           <div>
-            <div class="flex justify-between mb-1.5 font-bold">
-              <span>Isométrico</span>
-              <span class="font-mono">{{ dist.isometrico }}</span>
+            <div class="flex justify-between mb-1 text-xs font-semibold">
+              <span class="text-gray-300">🧘 Isométrico</span>
+              <span class="text-gray-400"
+                >{{ dist.isometrico }} treinos</span
+              >
             </div>
-            <div class="w-full bg-slate-900  h-4 p-0.5">
+            <div class="w-full bg-slate-900 h-4 p-0.5 rounded-sm">
               <div
-                class="bg-amber-500 h-full"
-                [style.width]="(dist.isometrico / total) * 100 + '%'"
+                class="bg-amber-500 h-full rounded-sm"
+                [style.width]="getDistributionPercentage('isometrico') + '%'"
               ></div>
             </div>
           </div>
+          } @if (totalDistributionWorkouts() === 0) {
+          <p class="text-center text-xs text-gray-500 italic">
+            Nenhum treino registrado para mostrar a distribuição.
+          </p>
           }
         </div>
       </div>
-      }
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatsSummaryCardComponent {
+  // ATUALIZADO: Input 'stats' usa a nova interface
   stats = input.required<StatsSummary>();
   title = input.required<string>();
+
+  // NOVA LÓGICA (do código objetivo)
+  totalDistributionWorkouts = computed(() => {
+    if (!this.stats()?.typeDistribution) return 0;
+    return Object.values(this.stats().typeDistribution).reduce(
+      (sum, count) => sum + (count || 0),
+      0
+    );
+  });
+
+  getDistributionPercentage(
+    type: "musculacao" | "cardio" | "isometrico"
+  ): number {
+    const count = this.stats().typeDistribution[type] || 0;
+    const total = this.totalDistributionWorkouts();
+    if (total === 0) return 0;
+    return (count / total) * 100;
+  }
+
+  getPercentageChange(current?: number, previous?: number): number | null {
+    if (
+      previous === undefined ||
+      current === undefined ||
+      previous === null ||
+      current === null
+    )
+      return null;
+    if (previous === 0) return current > 0 ? Infinity : 0;
+    return ((current - previous) / previous) * 100;
+  }
+
+  formatKilo(value: number): string {
+    if (!value) return "0";
+    if (value >= 1000) {
+      // Usa 'k' para milhares
+      const num = value / 1000;
+      // Evita ".0k"
+      return num.toFixed(num % 1 === 0 ? 0 : 1) + "k";
+    }
+    // Usa DecimalPipe para formatação padrão de números menores que 1000
+    return new DecimalPipe("en-US").transform(value, "1.0-0") || "0";
+  }
 }

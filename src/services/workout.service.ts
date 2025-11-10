@@ -19,7 +19,7 @@ export class WorkoutService {
 
   addWorkout(workoutData: Partial<Workout>): Workout {
     const newWorkout: Workout = {
-      id: Date.now(),
+      id: Date.now()+ 1,
       date: new Date().toISOString().split('T')[0],
       type: 'musculacao',
       name: 'Novo Treino',

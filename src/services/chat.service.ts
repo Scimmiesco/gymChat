@@ -13,7 +13,7 @@ export class ChatService {
 
   private getDefaultWelcomeMessage(): ChatMessage {
     return {
-      id: Date.now(),
+      id: Date.now() + 1,
       role: 'model',
       type: 'quick_actions',
       text: `Olá! Eu sou o Gymini, seu assistente de treino pessoal. 🏋️‍♂️

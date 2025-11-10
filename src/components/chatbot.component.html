@@ -1,8 +1,8 @@
 <div
-  class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-slate-800/50 shadow-2xl"
+  class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-slate-800/25 "
 >
   <!-- Header -->
-  <header class="flex items-center justify-between p-3 bg-slate-900 shrink-0">
+  <header class="flex items-center justify-between p-3 bg-slate-900/75 backdrop-blur-sm shrink-0">
     <div
       (click)="showProfile.set(true)"
       class="flex items-center cursor-pointer"
@@ -103,34 +103,62 @@
           <p class="text-sm font-semibold mb-2">{{ message.text }}</p>
           @if (workouts().length > 0) {
           <div
-            class="space-y-4 mt-2 max-h-80 overflow-y-auto pr-2 chat-container"
+            class="space-y-2 mt-2 max-h-[400px] overflow-y-auto pr-2 chat-container"
           >
-            @for (group of groupedWorkouts(); track group.date) {
-            <div>
-              <div
-                class="mb-2 flex justify-between sticky py-1 px-3 rounded-md text-center top-0 backdrop-blur-sm z-10 bg-emerald-600/75"
+            @for (weekGroup of groupedWorkoutsByWeek(); track
+            weekGroup.weekIdentifier) {
+            <div class="bg-slate-900/40 rounded-lg overflow-hidden">
+              <button
+                (click)="toggleWeek(weekGroup.weekIdentifier)"
+                class="w-full p-3 text-left bg-slate-800/50 hover:bg-slate-800/80 transition-colors focus:outline-none flex justify-between items-center"
               >
-                <h5 class="font-bold text-xl">
-                  {{ getFriendlyDateHeader(group.date) }}
-                </h5>
+                <div>
+                  <h4 class="font-bold text-white">{{ weekGroup.weekLabel }}</h4>
+                  <p class="text-xs text-slate-400">
+                    {{ weekGroup.totalWorkouts }} treinos •
+                    {{ weekGroup.totalDuration }} min • ~{{
+                      weekGroup.totalCalories | number : "1.0-0"
+                    }}
+                    cals
+                  </p>
+                </div>
                 <span
-                  >@if (group.totalCalories > 0) {
-                  <span class="text-md font-bold text-emerald-200"
-                    >~{{ group.totalCalories | number : "1.0-0" }} cals</span
-                  >
-                  }🔥
-                </span>
-              </div>
-
-              <div class="flex flex-col gap-2">
-                @for (workout of group.workouts; track workout.id) {
-                <app-workout-card
-                  [workout]="workout"
-                  (deleteRequest)="deleteWorkout($event)"
+                  class="text-xl transition-transform duration-200"
+                  [class.rotate-180]="!isWeekOpen(weekGroup.weekIdentifier)"
+                  >▼</span
                 >
-                </app-workout-card>
+              </button>
+
+              @if (isWeekOpen(weekGroup.weekIdentifier)) {
+              <div class="p-3 space-y-4 animate-fade-in">
+                @for (dayGroup of weekGroup.dayGroups; track dayGroup.date) {
+                <div>
+                  <div
+                    class="mb-2 flex justify-between items-center sticky py-1 px-2 rounded-md top-0 backdrop-blur-sm z-10 bg-emerald-800/60"
+                  >
+                    <h5 class="font-bold text-md text-emerald-200">
+                      {{ getFriendlyDateHeader(dayGroup.date) }}
+                    </h5>
+                    @if (dayGroup.totalCalories > 0) {
+                    <span class="text-xs font-bold text-emerald-300"
+                      >~{{ dayGroup.totalCalories | number : "1.0-0" }} cals
+                      🔥</span
+                    >
+                    }
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    @for (workout of dayGroup.workouts; track workout.id) {
+                    <app-workout-card
+                      [workout]="workout"
+                      (deleteRequest)="deleteWorkout($event)"
+                    >
+                    </app-workout-card>
+                    }
+                  </div>
+                </div>
                 }
               </div>
+              }
             </div>
             }
           </div>
@@ -322,4 +350,3 @@
     accept=".json"
   />
 </div>
-

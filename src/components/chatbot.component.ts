@@ -13,13 +13,28 @@ import { FormsModule } from "@angular/forms";
 import { AiService } from "../services/gemini.service";
 import { WorkoutService } from "../services/workout.service";
 import { ChatService } from "../services/chat.service";
-import { ChatMessage, Workout, USER_PROFILE } from "../models";
+import { ChatMessage, Workout, USER_PROFILE, WorkoutSet } from "../models"; // Importar WorkoutSet
 import { WorkoutCardComponent } from "./workout-card.component";
-import { StatsSummaryCardComponent } from "./summary-card.component";
+// Importar as novas interfaces do summary-card
+import {
+  StatsSummaryCardComponent,
+  StatsSummary,
+  WeekStats,
+} from "./summary-card.component";
 
-interface WorkoutGroup {
+// Interfaces for history view
+interface DayGroup {
   date: string;
   workouts: Workout[];
+  totalCalories: number;
+}
+
+interface WeekGroup {
+  weekIdentifier: string;
+  weekLabel: string;
+  dayGroups: DayGroup[];
+  totalWorkouts: number;
+  totalDuration: number;
   totalCalories: number;
 }
 
@@ -59,32 +74,88 @@ export class ChatComponent {
   totalWorkouts = this.workoutService.totalWorkouts;
   totalCalories = this.workoutService.totalCalories;
 
-  groupedWorkouts = computed((): WorkoutGroup[] => {
-    const groups = new Map<string, Workout[]>();
+  openWeekIdentifiers = signal<Set<string>>(new Set());
+
+  groupedWorkoutsByWeek = computed((): WeekGroup[] => {
+    const workoutsByWeek = new Map<string, Workout[]>();
+
+    // 1. Group all workouts by their week identifier
     for (const workout of this.workouts()) {
-      const date = workout.date;
-      if (!groups.has(date)) {
-        groups.set(date, []);
+      const workoutDate = new Date(workout.date + "T12:00:00Z");
+      const weekId = this.getWeekIdentifier(workoutDate);
+      if (!workoutsByWeek.has(weekId)) {
+        workoutsByWeek.set(weekId, []);
       }
-      groups.get(date)!.push(workout);
+      workoutsByWeek.get(weekId)!.push(workout);
     }
 
-    const workoutGroups: WorkoutGroup[] = Array.from(groups.entries()).map(
-      ([date, workouts]) => {
-        const totalCalories = workouts.reduce(
-          (sum, w) => sum + (w.calories || 0),
-          0
-        );
-        return { date, workouts, totalCalories };
+    const weekGroups: WeekGroup[] = [];
+
+    // 2. Process each week's workouts
+    for (const [weekIdentifier, weeklyWorkouts] of workoutsByWeek.entries()) {
+      const startOfWeek = new Date(weekIdentifier + "T12:00:00Z");
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+      // Format the week label for display
+      const weekLabel = `Semana de ${this.datePipe.transform(
+        startOfWeek,
+        "d MMM"
+      )} à ${this.datePipe.transform(endOfWeek, "d MMM, y")}`;
+
+      // Group workouts within the week by day
+      const dayGroupsMap = new Map<string, Workout[]>();
+      for (const workout of weeklyWorkouts) {
+        if (!dayGroupsMap.has(workout.date)) {
+          dayGroupsMap.set(workout.date, []);
+        }
+        dayGroupsMap.get(workout.date)!.push(workout);
       }
+
+      const dayGroups: DayGroup[] = Array.from(dayGroupsMap.entries()).map(
+        ([date, workouts]) => ({
+          date,
+          workouts,
+          totalCalories: workouts.reduce(
+            (sum, w) => sum + (w.calories || 0),
+            0
+          ),
+        })
+      );
+
+      // Sort days within the week (most recent first)
+      dayGroups.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+
+      // Calculate week-level statistics
+      const totalDuration = weeklyWorkouts.reduce(
+        (sum, w) => sum + (w.duration || 0),
+        0
+      );
+      const totalCalories = weeklyWorkouts.reduce(
+        (sum, w) => sum + (w.calories || 0),
+        0
+      );
+
+      weekGroups.push({
+        weekIdentifier,
+        weekLabel,
+        dayGroups,
+        totalWorkouts: weeklyWorkouts.length,
+        totalDuration,
+        totalCalories,
+      });
+    }
+
+    // 3. Sort weeks from most recent to oldest
+    weekGroups.sort(
+      (a, b) =>
+        new Date(b.weekIdentifier).getTime() -
+        new Date(a.weekIdentifier).getTime()
     );
 
-    // Sort groups by date, descending
-    workoutGroups.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-
-    return workoutGroups;
+    return weekGroups;
   });
 
   constructor() {
@@ -92,6 +163,33 @@ export class ChatComponent {
       if (this.chatContainer()) {
         this.scrollToBottom();
       }
+    });
+
+    // Effect to auto-open the first week if no weeks are currently open
+    effect(
+      () => {
+        const groups = this.groupedWorkoutsByWeek();
+        if (groups.length > 0 && this.openWeekIdentifiers().size === 0) {
+          this.openWeekIdentifiers.set(new Set([groups[0].weekIdentifier]));
+        }
+      },
+      { allowSignalWrites: true }
+    );
+  }
+
+  isWeekOpen(weekIdentifier: string): boolean {
+    return this.openWeekIdentifiers().has(weekIdentifier);
+  }
+
+  toggleWeek(weekIdentifier: string): void {
+    this.openWeekIdentifiers.update((currentSet) => {
+      const newSet = new Set(currentSet);
+      if (newSet.has(weekIdentifier)) {
+        newSet.delete(weekIdentifier);
+      } else {
+        newSet.add(weekIdentifier);
+      }
+      return newSet;
     });
   }
 
@@ -161,7 +259,7 @@ export class ChatComponent {
 
     this.isLoading.set(true);
     const userMessage: ChatMessage = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       role: "user",
       type: "text",
       text: userMessageText,
@@ -182,19 +280,26 @@ export class ChatComponent {
       const stream = await this.aiService.sendMessageStream(userMessageText);
       let fullResponse = "";
 
+      // Convert the 'loading' bubble to a 'text' bubble to show the streaming response
       this.chatService.updateLastMessage((lastMessage) => {
-        lastMessage.text = ""; // Start with empty text for streaming
+        lastMessage.type = 'text';
+        lastMessage.text = "";
       });
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || "";
         if (content) {
           fullResponse += content;
+          // Update the UI in real-time as chunks arrive
+          this.chatService.updateLastMessage(lastMessage => {
+            lastMessage.text = fullResponse;
+          });
         }
       }
 
       const parsedAction = this.parseJsonFromText(fullResponse);
 
+      // Final update to the message with the parsed text, and then handle the action
       this.chatService.updateLastMessage((lastMessage) => {
         lastMessage.text =
           parsedAction.text ||
@@ -249,6 +354,98 @@ export class ChatComponent {
     }
   }
 
+  // --- NOVAS FUNÇÕES DE CÁLCULO DE ESTATÍSTICAS ---
+
+  private getStartOfWeek(date: Date, startDay: number = 0): Date {
+    // 0 = Domingo, 1 = Segunda
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff =
+      d.getDate() -
+      day +
+      (day === startDay ? 0 : day < startDay ? -7 + startDay : startDay);
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private getWeekIdentifier(date: Date): string {
+    // Use Sunday (0) as the start of the week to align with getStartOfWeek
+    const startOfWeek = this.getStartOfWeek(date, 0);
+    return startOfWeek.toISOString().split("T")[0];
+  }
+
+  private calculateVolume(sets: WorkoutSet[] | undefined): number {
+    if (!Array.isArray(sets)) {
+      return 0;
+    }
+    return sets.reduce(
+      (sum, set) => sum + (set.reps || 0) * (set.weight || 0),
+      0
+    );
+  }
+
+  private getStatsForPeriod(
+    workouts: Workout[],
+    startDate: Date,
+    endDate: Date
+  ): WeekStats {
+    const startTimestamp = startDate.getTime();
+    const endTimestamp = endDate.getTime();
+
+    const filteredWorkouts = workouts.filter((w) => {
+      const workoutDate = new Date(w.date + "T12:00:00Z").getTime();
+      return workoutDate >= startTimestamp && workoutDate <= endTimestamp;
+    });
+
+    return filteredWorkouts.reduce(
+      (acc, w) => {
+        acc.totalWorkouts += 1;
+        acc.totalCalories += w.calories || 0;
+        acc.totalDuration += w.duration || 0;
+        acc.totalDistance += w.distance || 0;
+        acc.totalVolume +=
+          w.type === "musculacao" ? this.calculateVolume(w.sets) : 0;
+        return acc;
+      },
+      {
+        totalWorkouts: 0,
+        totalCalories: 0,
+        totalDuration: 0,
+        totalVolume: 0,
+        totalDistance: 0,
+      }
+    );
+  }
+
+  private getConsistencyStats(
+    workouts: Workout[],
+    days: number
+  ): { daysInLast7: number } {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    const pastDate = new Date();
+    pastDate.setDate(today.getDate() - (days - 1));
+    pastDate.setHours(0, 0, 0, 0);
+
+    const startTimestamp = pastDate.getTime();
+    const endTimestamp = today.getTime();
+
+    const trainedDays = new Set<string>();
+
+    workouts.forEach((w) => {
+      const workoutDate = new Date(w.date + "T12:00:00Z").getTime();
+      if (workoutDate >= startTimestamp && workoutDate <= endTimestamp) {
+        trainedDays.add(w.date);
+      }
+    });
+
+    return { daysInLast7: trainedDays.size };
+  }
+
+  // --- FIM DAS NOVAS FUNÇÕES ---
+
   private handleAction(parsed: any) {
     let addFollowUp = false;
 
@@ -291,45 +488,65 @@ export class ChatComponent {
         case "show_history":
           lastMessage.type = "history_summary";
           break;
+
+        // --- LÓGICA ATUALIZADA PARA 'show_summary' ---
         case "show_summary":
-          const workouts = this.workouts();
-          const totalWorkouts = workouts.length;
-          const totalCalories = workouts.reduce(
-            (sum, w) => sum + (w.calories || 0),
-            0
-          );
-          const totalDuration = workouts.reduce(
-            (sum, w) => sum + (w.duration || 0),
-            0
-          );
-          const totalVolume = workouts
-            .filter((w) => w.type === "musculacao" && w.sets)
-            .reduce((total, w) => {
-              const workoutVolume = w.sets!.reduce(
-                (sum, set) => sum + (set.reps || 0) * (set.weight || 0),
-                0
-              );
-              return total + workoutVolume;
-            }, 0);
-          const totalDistance = workouts
-            .filter((w) => w.type === "cardio" && w.distance)
-            .reduce((sum, w) => sum + w.distance!, 0);
+          const allWorkouts = this.workouts();
 
-          const typeDistribution = workouts.reduce((acc, w) => {
-            acc[w.type] = (acc[w.type] || 0) + 1;
-            return acc;
-          }, {} as { [key in "musculacao" | "cardio" | "isometrico"]?: number });
+          // Definir datas
+          const today = new Date();
+          // Assumindo que a semana começa no Domingo (0)
+          const startOfThisWeek = this.getStartOfWeek(today, 0);
+          const endOfThisWeek = new Date(startOfThisWeek);
+          endOfThisWeek.setDate(startOfThisWeek.getDate() + 6);
+          endOfThisWeek.setHours(23, 59, 59, 999);
 
-          lastMessage.type = "stats_summary";
-          lastMessage.payload = {
-            totalWorkouts: totalWorkouts,
-            totalCalories: totalCalories,
-            totalDuration: totalDuration,
-            totalVolume: totalVolume,
-            totalDistance: totalDistance,
+          const startOfLastWeek = new Date(startOfThisWeek);
+          startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+          const endOfLastWeek = new Date(startOfThisWeek);
+          endOfLastWeek.setDate(startOfThisWeek.getDate() - 1);
+          endOfLastWeek.setHours(23, 59, 59, 999);
+
+          // Calcular estatísticas
+          const overallStats = this.getStatsForPeriod(
+            allWorkouts,
+            new Date(0),
+            today
+          );
+          const thisWeekStats = this.getStatsForPeriod(
+            allWorkouts,
+            startOfThisWeek,
+            endOfThisWeek
+          );
+          const lastWeekStats = this.getStatsForPeriod(
+            allWorkouts,
+            startOfLastWeek,
+            endOfLastWeek
+          );
+          const consistencyStats = this.getConsistencyStats(allWorkouts, 7);
+
+          const typeDistribution = allWorkouts.reduce(
+            (acc, w) => {
+              acc[w.type] = (acc[w.type] || 0) + 1;
+              return acc;
+            },
+            {} as { [key in "musculacao" | "cardio" | "isometrico"]?: number }
+          );
+
+          // Montar o payload
+          const summaryPayload: StatsSummary = {
+            overall: overallStats,
+            thisWeek: thisWeekStats,
+            lastWeek: lastWeekStats,
+            consistency: consistencyStats,
             typeDistribution: typeDistribution,
           };
+
+          lastMessage.type = "stats_summary";
+          lastMessage.payload = summaryPayload;
           break;
+
+        // --- FIM DA LÓGICA ATUALIZADA ---
         case "show_profile":
           lastMessage.type = "user_profile";
           lastMessage.payload = this.userProfile;
@@ -471,4 +688,3 @@ export class ChatComponent {
     }, 0);
   }
 }
-
