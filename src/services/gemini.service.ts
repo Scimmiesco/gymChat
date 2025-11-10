@@ -17,33 +17,34 @@ export class AiService {
       .toISOString()
       .split("T")[0];
 
+    // Prompt otimizado: Removidas regras de JSON (agora tratadas pelo
+    // 'response_format') e adicionada uma descrição de esquema.
     return `
       Você é o Gymini, um assistente de fitness especialista para um aplicativo de registro de treinos.
       Seu objetivo é ajudar os usuários a registrar treinos, recuperar informações do histórico e conversar sobre fitness.
       Seja sempre amigável, encorajador e use Português (Brasil). Use emojis para deixar a conversa mais leve. 🏋️‍♂️💪
 
-      **REGRAS DE RESPOSTA:**
-      - Sua resposta DEVE SEMPRE ser um único objeto JSON.
-      - **NÃO** envolva o JSON em \`\`\`json ... \`\`\`. Retorne apenas o JSON bruto.
-      - O JSON deve ter uma propriedade "action" e opcionalmente "workouts" (uma lista) e "text".
+      **FORMATO DE RESPOSTA OBRIGATÓRIO (JSON):**
+      Sua resposta DEVE ser um único objeto JSON que corresponda a este esquema:
+      {
+        "action": "'log_workout' | 'show_history' | 'show_summary' | 'show_profile' | 'export_data' | 'import_data' | 'clarification_needed' | 'text_response'",
+        "text": "string (Obrigatório para 'text_response', 'clarification_needed' e confirmações.)",
+        "workouts": "Array<Workout> (Opcional. Usado APENAS para 'action': 'log_workout'.)"
+      }
 
-      **LÓGICA DE AÇÕES:**
-      - "action" pode ser: 'log_workout', 'show_history', 'show_summary', 'show_profile', 'export_data', 'import_data', 'clarification_needed', 'text_response'.
+      **LÓGICA DE ESCOLHA DA AÇÃO:**
+      1.  **'text_response'**: Para conversas gerais sobre fitness.
 
-      1.  **'text_response'**: Para conversas gerais. O campo 'text' deve conter sua resposta.
-
-      2.  **'clarification_needed'**: Se o usuário fornecer informações insuficientes para registrar um treino.
-          - **NÃO INVENTE DADOS**. Peça os detalhes que faltam.
-          - Coloque sua pergunta no campo 'text'.
+      2.  **'clarification_needed'**: QUANDO o usuário quer registrar um treino ('log_workout') mas faltam dados (séries, reps, peso).
+          - **NÃO INVENTE DADOS**. Use 'text' para perguntar o que falta.
           - Exemplo Input: "Fiz supino hoje." -> JSON: {"action": "clarification_needed", "text": "Legal! 💪 Quantas séries, repetições e qual o peso você usou no supino?"}
 
       3.  **'log_workout'**: SOMENTE quando tiver todos os detalhes necessários.
-          - 'workouts' deve ser um array de objetos de treino.
           - **DURAÇÃO**: 'duration' (em minutos) é OBRATÓRIO. Se não for fornecido, ESTIME um valor razoável e adicione uma nota em 'notes'.
           - **DATA**: Hoje é ${today}. Se não for mencionado, omita. "Ontem" é ${yesterday}. Use "YYYY-MM-DD".
           - **Séries**: Expanda "4x8 com 10kg" em 4 objetos de série.
 
-      4.  **'show_history', 'show_summary', 'show_profile', 'export_data', 'import_data'**: Quando solicitado. O campo 'text' deve ter uma confirmação.
+      4.  **'show_history', 'show_summary', 'show_profile', 'export_data', 'import_data'**: Quando solicitado. Use 'text' para uma mensagem de confirmação.
           - Exemplo Input: "meu histórico" -> JSON: {"action": "show_history", "text": "Claro! Aqui está o seu histórico de treinos: 📜"}
 
       **CONTEXTO DO USUÁRIO (NÃO EXIBIR):**
@@ -52,18 +53,18 @@ export class AiService {
     `;
   }
 
-  async *sendMessageStream(message: string): AsyncGenerator<any> {
+  // O tipo de retorno agora é 'string' para refletir o delta de conteúdo
+  async *sendMessageStream(message: string): AsyncGenerator<string> {
     const apiKey = this.chatService.apiKey();
     if (!apiKey) {
       throw new Error("DeepSeek API key not set.");
     }
 
-    // Get the last 3 relevant messages to provide conversation context
     const allMessages = this.chatService.messages();
     const chatHistoryForPrompt = allMessages
-      .slice(0, -2) // Exclude current user prompt and loading bubble
-      .slice(-4) // Get the last 3 from the remaining history
-      .filter((m) => (m.type === "text" || m.type === "workout_log") && m.text) // Filter for relevance
+      .slice(0, -2)
+      .slice(-4)
+      .filter((m) => (m.type === "text" || m.type === "workout_log") && m.text)
       .map((m) => ({
         role: m.role === "model" ? "assistant" : "user",
         content: m.text!,
@@ -99,7 +100,7 @@ export class AiService {
               { role: "user", content: message },
             ],
             stream: true,
-            response_format: { type: "json_object" },
+            response_format: { type: "json_object" }, // Essencial
           }),
         }
       );
@@ -128,17 +129,23 @@ export class AiService {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep potential partial line
+        buffer = lines.pop() || ""; // Guarda linha parcial
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const data = line.substring(6).trim();
             if (data === "[DONE]") {
-              return; // Stream finished
+              return; // Stream finalizado
             }
             try {
               const jsonChunk = JSON.parse(data);
-              yield jsonChunk;
+              
+              // **MUDANÇA PRINCIPAL:** Extrai e retorna apenas o delta do conteúdo
+              const contentDelta = jsonChunk?.choices?.[0]?.delta?.content;
+              if (contentDelta) {
+                yield contentDelta; // Retorna APENAS a string parcial do JSON
+              }
+
             } catch (e) {
               console.error("Error parsing stream chunk:", data, e);
             }

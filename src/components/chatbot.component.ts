@@ -287,7 +287,7 @@ export class ChatComponent {
       });
 
       for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || "";
+        const content = chunk || "";
         if (content) {
           fullResponse += content;
           // Update the UI in real-time as chunks arrive
