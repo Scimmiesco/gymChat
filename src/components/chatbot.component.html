@@ -54,7 +54,7 @@
       [class.justify-end]="message.role === 'user'"
     >
       <div
-        class="w-11/12 md:w-3/4 rounded-md p-2 relative backdrop-blur-sm border-2 border-slate-900"
+        class="w-11/12 md:w-3/4 rounded-md p-2 relative backdrop-blur-sm"
         [class.chat-bubble-user]="message.role === 'user'"
         [class.chat-bubble-model]="message.role === 'model'"
       >
@@ -78,7 +78,7 @@
           @for (action of message.payload; track action) {
           <button
             (click)="sendQuickAction(action)"
-            class="bg-emerald-800/70 text-emerald-300 text-sm font-semibold py-1.5 px-3 rounded-full hover:bg-emerald-700/70 transition-colors"
+            class="bg-emerald-600/70 text-emerald-300 text-sm font-semibold py-1.5 px-3 rounded-full hover:bg-emerald-600/70 transition-colors"
           >
             {{ action }}
           </button>
@@ -108,7 +108,7 @@
             @for (group of groupedWorkouts(); track group.date) {
             <div>
               <div
-                class="mb-2 flex justify-between sticky py-1 px-3 rounded-md border-2 border-emerald-600 text-center top-0 backdrop-blur-sm z-10 bg-emerald-600/75"
+                class="mb-2 flex justify-between sticky py-1 px-3 rounded-md text-center top-0 backdrop-blur-sm z-10 bg-emerald-600/75"
               >
                 <h5 class="font-bold text-xl">
                   {{ getFriendlyDateHeader(group.date) }}
@@ -178,7 +178,7 @@
       <button
         type="submit"
         [disabled]="!userInput() || isLoading()"
-        class="bg-emerald-600/50 backdrop-blur-sm rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-slate-600 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors"
+        class="bg-emerald-600/50 backdrop-blur-sm rounded-full w-11 h-11 flex items-center justify-center shrink-0 disabled:bg-slate-600 disabled:cursor-not-allowed hover:bg-emerald-600 transition-colors"
       >
         <span class="text-xl -mr-1">➤</span>
       </button>
@@ -188,7 +188,7 @@
     @if (showScrollButton()) {
     <button
       (click)="smoothScrollToBottom()"
-      class="absolute bottom-20 right-4 z-50 bg-emerald-600/50 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-emerald-700 transition-all animate-fade-in"
+      class="absolute bottom-20 right-4 z-50 bg-emerald-600/50 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-emerald-600 transition-all animate-fade-in"
       title="Ir para mensagens recentes"
     >
       <span class="text-2xl">⬇️</span>
@@ -204,7 +204,7 @@
   >
     <div
       (click)="$event.stopPropagation()"
-      class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700"
+      class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm"
     >
       <div class="flex flex-col items-center text-center">
         <div
@@ -247,7 +247,7 @@
               userProfile.gender
             }}</span>
           </p>
-          <p class="border-t border-slate-700 pt-2 mt-2">
+          <p class="border-t border-slate-900/50 pt-2 mt-2">
             <strong>TMB (Est.):</strong>
             <span class="text-emerald-400 font-medium"
               >{{ userProfile.bmr | number : "1.0-0" }} cal/dia</span
@@ -256,7 +256,7 @@
         </div>
         <button
           (click)="showProfile.set(false)"
-          class="mt-6 bg-emerald-600 font-bold py-2 px-6 rounded-md w-full hover:bg-emerald-700 transition-colors"
+          class="mt-6 bg-emerald-600 font-bold py-2 px-6 rounded-md w-full hover:bg-emerald-600 transition-colors"
         >
           Fechar
         </button>
@@ -273,7 +273,7 @@
   >
     <div
       (click)="$event.stopPropagation()"
-      class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700"
+      class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm"
     >
       <h2 class="text-2xl font-bold text-center">Configurações</h2>
       <p class="text-center mt-1 mb-6">Gerencie suas chaves de API.</p>
@@ -290,7 +290,7 @@
           placeholder="Insira sua chave de API aqui"
           class="w-full bg-[#2a3942] rounded-md py-2 px-4 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
-        <p class="text-xs ">
+        <p class="text-xs">
           Sua chave é salva localmente e nunca sai do seu navegador.
         </p>
       </div>
@@ -305,7 +305,7 @@
         <button
           (click)="saveSettings()"
           [disabled]="!apiKeyInput()"
-          class="bg-emerald-600 font-bold py-2 px-6 rounded-md w-full hover:bg-emerald-700 transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed"
+          class="bg-emerald-600 font-bold py-2 px-6 rounded-md w-full hover:bg-emerald-600 transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed"
         >
           Salvar
         </button>

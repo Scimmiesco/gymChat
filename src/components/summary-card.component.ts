@@ -23,7 +23,7 @@ export interface StatsSummary {
       <!-- Main Stats -->
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">🏋️‍♂️</div>
           <h4
@@ -34,7 +34,7 @@ export interface StatsSummary {
           <p class="text-xl font-bold">{{ stats().totalWorkouts }}</p>
         </div>
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">🔥</div>
           <h4
@@ -47,7 +47,7 @@ export interface StatsSummary {
           </p>
         </div>
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">⏱️</div>
           <h4
@@ -62,7 +62,7 @@ export interface StatsSummary {
         </div>
         @if (stats().totalVolume > 0) {
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">💪</div>
           <h4
@@ -77,7 +77,7 @@ export interface StatsSummary {
         </div>
         } @if (stats().totalDistance > 0) {
         <div
-          class="bg-slate-900/50 backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md flex flex-col items-center justify-center"
+          class="bg-slate-900/50 backdrop-blur-sm p-2  rounded-md flex flex-col items-center justify-center"
         >
           <div class="text-3xl mb-1">🏃‍♂️</div>
           <h4
@@ -95,7 +95,7 @@ export interface StatsSummary {
 
       <!-- Distribution Section -->
       @if (stats().totalWorkouts > 0 && stats().typeDistribution) {
-      <div class="border-t-2 border-slate-900 p-2">
+      <div class="border-t-2 border-slate-900/50 p-2">
         @let dist = stats().typeDistribution; @let total =
         stats().totalWorkouts;
         <div class="space-y-3 text-sm">
@@ -105,11 +105,9 @@ export interface StatsSummary {
               <span>Musculação</span>
               <span class="font-mono">{{ dist.musculacao }}</span>
             </div>
-            <div
-              class="w-full bg-slate-900 border-2 border-slate-900 h-4 p-0.5 rounded-sm"
-            >
+            <div class="w-full bg-slate-900  h-4 p-0.5 rounded-sm">
               <div
-                class="bg-emerald-500 h-full rounded-sm"
+                class="bg-emerald-600 h-full rounded-sm"
                 [style.width]="(dist.musculacao / total) * 100 + '%'"
               ></div>
             </div>
@@ -120,9 +118,7 @@ export interface StatsSummary {
               <span>Cardio</span>
               <span class="font-mono">{{ dist.cardio }}</span>
             </div>
-            <div
-              class="w-full bg-slate-900 border-2 border-slate-900 h-4 p-0.5 rounded-sm"
-            >
+            <div class="w-full bg-slate-900  h-4 p-0.5 rounded-sm">
               <div
                 class="bg-sky-500 h-full rounded-sm"
                 [style.width]="(dist.cardio / total) * 100 + '%'"
@@ -135,9 +131,7 @@ export interface StatsSummary {
               <span>Isométrico</span>
               <span class="font-mono">{{ dist.isometrico }}</span>
             </div>
-            <div
-              class="w-full bg-slate-900 border-2 border-slate-900 h-4 p-0.5"
-            >
+            <div class="w-full bg-slate-900  h-4 p-0.5">
               <div
                 class="bg-amber-500 h-full"
                 [style.width]="(dist.isometrico / total) * 100 + '%'"

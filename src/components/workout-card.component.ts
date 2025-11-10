@@ -7,7 +7,7 @@ import {
   computed,
 } from "@angular/core";
 import { CommonModule, DatePipe } from "@angular/common";
-import { Workout } from "../models";
+import { Workout, WorkoutSet } from "../models";
 
 @Component({
   selector: "app-workout-card",
@@ -15,7 +15,7 @@ import { Workout } from "../models";
   imports: [CommonModule, DatePipe],
   template: `
     <div
-      class="flex flex-col gap-4 justify-around bg-slate-900/30 backdrop-blur-sm rounded-md p-2 border-2 border-slate-900 transition-all duration-200"
+      class="flex flex-col gap-4 justify-around bg-slate-900/30 backdrop-blur-sm rounded-md p-2  transition-all duration-200"
       [class.border-t-4]="true"
       [class.border-t-emerald-900]="workout().type === 'musculacao'"
       [class.border-t-sky-900]="workout().type === 'cardio'"
@@ -23,7 +23,7 @@ import { Workout } from "../models";
     >
       <!-- Header -->
       <div
-        class="flex justify-between items-start border-b-2 border-slate-900 p-2 flex-1"
+        class="flex justify-between items-start border-b-2 border-slate-900/50 p-2 flex-1"
       >
         <div class="flex items-center gap-3 ">
           <span class="text-3xl">
@@ -51,42 +51,46 @@ import { Workout } from "../models";
       <!-- Main Stats -->
       <div class="grid grid-cols-2 gap-2 text-center flex-1">
         @if (workout().duration) {
-        <div class="backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md">
-          <div
-            class="text-xs text-slate-400 font-semibold uppercase tracking-wider"
+        <div class="backdrop-blur-sm p-2  rounded-md">
+          <div class="text-3xl mb-1">⏱️</div>
+          <h4
+            class="text-xs text-slate-400 font-bold uppercase tracking-wider text-center"
           >
-            Duração
-          </div>
-          <div class="font-bold text-xl">
+            Tempo
+          </h4>
+          <p class="text-xl font-bold">
             {{ workout().duration }}
-            <span class="text-sm font-normal">min</span>
-          </div>
+            <span class="text-base font-normal">min</span>
+          </p>
         </div>
         } @else {
         <div class="hidden sm:block"></div>
         } @if (workout().calories) {
-        <div class="backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md">
-          <div
-            class="text-xs text-slate-400 font-semibold uppercase tracking-wider"
+        <div class="backdrop-blur-sm p-2  rounded-md">
+          <div class="text-3xl mb-1">🔥</div>
+          <h4
+            class="text-xs text-slate-400 font-bold uppercase tracking-wider text-center"
           >
             Calorias
-          </div>
-          <div class="font-bold text-emerald-400 text-xl">
+          </h4>
+          <p class="text-xl font-bold text-emerald-400">
             ~{{ workout().calories | number : "1.0-0" }}
-          </div>
+          </p>
         </div>
         } @else {
         <div class="hidden sm:block"></div>
         } @if (workout().distance) {
-        <div class="backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md">
-          <div
-            class="text-xs text-slate-400 font-semibold uppercase tracking-wider"
+        <div class="backdrop-blur-sm p-2  rounded-md">
+          <div class="text-3xl mb-1">🏃‍♂️</div>
+          <h4
+            class="text-xs text-slate-400 font-bold uppercase tracking-wider text-center"
           >
             Distância
-          </div>
-          <div class="font-bold text-xl">
-            {{ workout().distance }} <span class="text-sm font-normal">km</span>
-          </div>
+          </h4>
+          <p class="text-xl font-bold">
+            {{ workout().distance | number : "1.1-1" }}
+            <span class="text-base font-normal">km</span>
+          </p>
         </div>
         } @else {
         <div class="hidden sm:block"></div>
@@ -95,12 +99,10 @@ import { Workout } from "../models";
 
       <!-- Collapsible Details Section -->
       @if (hasDetails()) {
-      <div
-        class="flex flex-col justify-around gap-2 p-1 border-t-2 border-slate-900"
-      >
+      <div class="flex flex-col justify-around gap-2 p-1">
         <button
           (click)="toggleDetails()"
-          class="w-full bg-emerald-600/70 backdrop-blur-sm rounded-md font-bold text-sm py-2 px-4 border-2 border-slate-900 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-150"
+          class="w-full bg-emerald-600/70 backdrop-blur-sm rounded-md font-bold text-sm py-2 px-4  active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-150"
         >
           @if (isExpanded()) {
           <span>ESCONDER DETALHES</span>
@@ -126,7 +128,7 @@ import { Workout } from "../models";
             </div>
             @for (set of workout().sets; track $index) {
             <div
-              class="grid grid-cols-3 items-center bg-slate-900/50 backdrop-blur-sm p-2 border-2 border-slate-900 rounded-md text-base"
+              class="grid grid-cols-3 items-center bg-slate-900/50 backdrop-blur-sm p-2  rounded-md text-base"
             >
               <span class="font-mono font-bold">{{ $index + 1 }}</span>
               <span class="font-bold  text-center">
@@ -157,13 +159,18 @@ export class WorkoutCardComponent {
 
   hasDetails = computed(() => {
     const w = this.workout();
-    return !!w.notes || (w.sets && w.sets.length > 0);
+    return !!w.notes || this.workoutSets().length > 0;
   });
 
   toggleDetails(): void {
     this.isExpanded.update((v) => !v);
   }
 
+  workoutSets = computed<WorkoutSet[]>(() => {
+    const sets = this.workout().sets;
+    return Array.isArray(sets) ? sets : [];
+  });
+  
   onDelete(): void {
     this.deleteRequest.emit(this.workout().id);
   }

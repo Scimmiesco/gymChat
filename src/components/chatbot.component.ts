@@ -48,8 +48,8 @@ export class ChatComponent {
   isLoading = signal(false);
   showProfile = signal(false);
   showSettings = signal(false);
-  apiKeyInput = signal(this.chatService.apiKey() ?? "");
   showScrollButton = signal(false);
+  apiKeyInput = signal(this.chatService.apiKey() ?? "");
 
   chatContainer = viewChild<ElementRef<HTMLDivElement>>("chatContainer");
   importFileInput = viewChild<ElementRef<HTMLInputElement>>("importFileInput");
@@ -129,6 +129,22 @@ export class ChatComponent {
     }
   }
 
+  private parseJsonFromText(text: string): any {
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      throw new Error("No valid JSON object found in the response.");
+    } catch (e) {
+      console.error("Failed to parse JSON from AI response:", text, e);
+      return {
+        action: "text_response",
+        text: text || "Não consegui processar a resposta. Tente novamente.",
+      };
+    }
+  }
+
   async sendMessage(): Promise<void> {
     const userMessageText = this.userInput().trim();
     if (!userMessageText || this.isLoading()) return;
@@ -160,40 +176,47 @@ export class ChatComponent {
       type: "loading",
       timestamp: new Date().toISOString(),
     });
+    this.scrollToBottom();
 
     try {
-      const stream = await this.aiService.sendMessage(userMessageText);
+      const stream = await this.aiService.sendMessageStream(userMessageText);
       let fullResponse = "";
+
+      this.chatService.updateLastMessage((lastMessage) => {
+        lastMessage.text = ""; // Start with empty text for streaming
+      });
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || "";
         if (content) {
           fullResponse += content;
-          this.chatService.updateLastMessage((lastMessage) => {
-            if (lastMessage.type === "loading") {
-              lastMessage.type = "text";
-            }
-            lastMessage.text = this.cleanResponse(fullResponse);
-          });
-          this.scrollToBottom();
         }
       }
 
-      const parsedAction = this.extractJson(fullResponse);
+      const parsedAction = this.parseJsonFromText(fullResponse);
 
-      if (parsedAction) {
-        this.handleAction(parsedAction);
-      }
+      this.chatService.updateLastMessage((lastMessage) => {
+        lastMessage.text =
+          parsedAction.text ||
+          this.getDefaultTextForAction(parsedAction.action);
+      });
+
+      this.handleAction(parsedAction);
     } catch (error) {
       console.error("Error sending message:", error);
-      let errorMessage = "Desculpe, ocorreu um erro. Tente novamente. 😥";
-      if (
-        error instanceof Error &&
-        (error.message.includes("401") ||
-          error.message.toLowerCase().includes("incorrect api key"))
-      ) {
-        errorMessage =
-          "A chave de API parece ser inválida. Verifique-a nas configurações. 🔑";
+      let errorMessage =
+        "Desculpe, ocorreu um erro ao comunicar com a IA. Tente novamente. 😥";
+      if (error instanceof Error) {
+        if (
+          error.message.includes("401") ||
+          error.message.toLowerCase().includes("incorrect api key")
+        ) {
+          errorMessage =
+            "A chave de API da DeepSeek parece ser inválida. Verifique-a nas configurações. 🔑";
+        } else if (error.message.includes("DeepSeek API key not set")) {
+          errorMessage =
+            "Por favor, configure sua chave de API da DeepSeek nas configurações. ⚙️";
+        }
       }
       this.chatService.updateLastMessage((lastMessage) => {
         if (lastMessage.type === "loading" || lastMessage.type === "text") {
@@ -213,17 +236,42 @@ export class ChatComponent {
     this.addMessage("model", "text", "✅ Chave de API salva com sucesso!");
   }
 
+  private getDefaultTextForAction(action: string): string {
+    switch (action) {
+      case "log_workout":
+        return "Treino registrado!";
+      case "show_history":
+        return "Aqui está seu histórico.";
+      case "show_summary":
+        return "Aqui está seu resumo.";
+      default:
+        return "";
+    }
+  }
+
   private handleAction(parsed: any) {
     let addFollowUp = false;
+
+    if (
+      parsed.action === "clarification_needed" ||
+      parsed.action === "text_response"
+    ) {
+      this.chatService.updateLastMessage((lastMessage) => {
+        lastMessage.type = "text";
+      });
+      return;
+    }
 
     this.chatService.updateLastMessage((lastMessage) => {
       switch (parsed.action) {
         case "log_workout":
-          // Check for the new multi-workout format
-          if (parsed.workouts && Array.isArray(parsed.workouts)) {
-            lastMessage.type = "text"; // Keep the AI's summary as a plain text message
+          if (
+            parsed.workouts &&
+            Array.isArray(parsed.workouts) &&
+            parsed.workouts.length > 0
+          ) {
+            lastMessage.type = "text";
 
-            // Add a new message with a card for each workout
             for (const workoutData of parsed.workouts) {
               const newWorkout = this.workoutService.addWorkout(workoutData);
               this.addMessage(
@@ -233,11 +281,10 @@ export class ChatComponent {
                 newWorkout
               );
             }
-          } else if (parsed.workout) {
-            // Handle the original single-workout format
-            const newWorkout = this.workoutService.addWorkout(parsed.workout);
-            lastMessage.type = "workout_log";
-            lastMessage.payload = newWorkout;
+          } else {
+            lastMessage.type = "error";
+            lastMessage.text =
+              "A IA tentou registrar um treino, mas não conseguiu extrair os detalhes. Por favor, tente descrever o treino novamente.";
           }
           addFollowUp = true;
           break;
@@ -343,12 +390,10 @@ export class ChatComponent {
   sendQuickAction(prompt: string): void {
     if (this.isLoading()) return;
 
-    // 1. Adiciona a mensagem do usuário para registrar o que foi clicado
     this.addMessage("user", "text", prompt);
 
     let actionPayload: { action: string; text: string } | null = null;
 
-    // 2. Mapeia o texto da ação rápida para um objeto de ação predefinido
     switch (prompt) {
       case "Ver meu histórico":
         actionPayload = {
@@ -370,18 +415,33 @@ export class ChatComponent {
         break;
     }
 
-    // 3. Se for uma ação conhecida, lida com ela diretamente no cliente
     if (actionPayload) {
-      // Adiciona a resposta de texto do modelo. Esta se tornará a "última mensagem".
       this.addMessage("model", "text", actionPayload.text);
-
-      // Chama handleAction, que encontrará a última mensagem que acabamos de adicionar
-      // e a transformará no tipo de componente correto (ex: 'history_summary').
       this.handleAction(actionPayload);
     } else {
-      // 4. Fallback para quaisquer ações rápidas desconhecidas no futuro: envia para a IA.
       this.userInput.set(prompt);
       this.sendMessage();
+    }
+  }
+
+  onChatScroll(event: Event): void {
+    const el = event.target as HTMLDivElement;
+    if (!el) return;
+
+    const threshold = 150; // Pixels from bottom to show button
+    const isAtBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+
+    this.showScrollButton.set(!isAtBottom);
+  }
+
+  smoothScrollToBottom(): void {
+    const el = this.chatContainer()?.nativeElement;
+    if (el) {
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: "smooth",
+      });
     }
   }
 
@@ -400,44 +460,6 @@ export class ChatComponent {
       timestamp: new Date().toISOString(),
     };
     this.chatService.addMessage(newMessage);
-  }
-
-    onChatScroll(event: Event): void {
-    const el = event.target as HTMLDivElement;
-    if (!el) return;
-  
-    const threshold = 150; // Pixels from bottom to show button
-    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
-  
-    this.showScrollButton.set(!isAtBottom);
-  }
-
-  smoothScrollToBottom(): void {
-    const el = this.chatContainer()?.nativeElement;
-    if (el) {
-      el.scrollTo({
-        top: el.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
-  }
-  
-  private extractJson(text: string): any | null {
-    const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-    const match = text.match(jsonRegex);
-    if (match && match[1]) {
-      try {
-        return JSON.parse(match[1]);
-      } catch (e) {
-        console.error("Failed to parse JSON from model response:", e);
-        return null;
-      }
-    }
-    return null;
-  }
-
-  private cleanResponse(text: string): string {
-    return text.replace(/```json\s*([\s\S]*?)\s*```/, "").trim();
   }
 
   private scrollToBottom(): void {
