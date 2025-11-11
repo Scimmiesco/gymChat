@@ -19,7 +19,7 @@ export interface Workout {
 export type MessageType = 'text' | 'workout_log' | 'history_summary' | 'stats_summary' | 'user_profile' | 'loading' | 'error' | 'quick_actions';
 
 export interface ChatMessage {
-  id: number;
+  id: string;
   role: 'user' | 'model';
   type: MessageType;
   text?: string;

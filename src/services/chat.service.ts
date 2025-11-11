@@ -1,30 +1,26 @@
-import { Injectable, signal } from '@angular/core';
-import { ChatMessage } from '../models';
+import { Injectable, signal } from "@angular/core";
+import { ChatMessage } from "../models";
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root",
 })
 export class ChatService {
-  private readonly CHAT_HISTORY_KEY = 'aiWorkoutLoggerChatHistory';
-  private readonly API_KEY_STORAGE_KEY = 'aiWorkoutLogger_deepseekApiKey';
-  
+  private readonly CHAT_HISTORY_KEY = "aiWorkoutLoggerChatHistory";
+  private readonly API_KEY_STORAGE_KEY = "aiWorkoutLogger_deepseekApiKey";
+
   messages = signal<ChatMessage[]>(this.loadFromStorage());
   apiKey = signal<string | null>(this.loadApiKey());
 
   private getDefaultWelcomeMessage(): ChatMessage {
     return {
-      id: Date.now() + 1,
-      role: 'model',
-      type: 'quick_actions',
+      id: (Date.now() + Math.random()).toString(),
+      role: "model",
+      type: "quick_actions",
       text: `Olá! Eu sou o Gymini, seu assistente de treino pessoal. 🏋️‍♂️
 
 Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um dos atalhos abaixo.`,
-      payload: [
-        'Ver meu histórico',
-        'Mostrar resumo',
-        'Qual o meu perfil?'
-      ],
-      timestamp: new Date().toISOString()
+      payload: ["Ver meu histórico", "Mostrar resumo", "Qual o meu perfil?"],
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -32,7 +28,7 @@ Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um 
     try {
       return localStorage.getItem(this.API_KEY_STORAGE_KEY);
     } catch (e) {
-      console.error('Failed to load API key from storage', e);
+      console.error("Failed to load API key from storage", e);
       return null;
     }
   }
@@ -42,7 +38,7 @@ Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um 
       this.apiKey.set(key);
       localStorage.setItem(this.API_KEY_STORAGE_KEY, key);
     } catch (e) {
-      console.error('Failed to save API key to storage', e);
+      console.error("Failed to save API key to storage", e);
     }
   }
 
@@ -55,7 +51,7 @@ Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um 
       }
       return messages;
     } catch (e) {
-      console.error('Failed to load chat history from storage', e);
+      console.error("Failed to load chat history from storage", e);
       return [this.getDefaultWelcomeMessage()];
     }
   }
@@ -64,10 +60,10 @@ Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um 
     try {
       localStorage.setItem(this.CHAT_HISTORY_KEY, JSON.stringify(messages));
     } catch (e) {
-      console.error('Failed to save chat history to storage', e);
+      console.error("Failed to save chat history to storage", e);
     }
   }
-  
+
   addMessage(message: ChatMessage): void {
     const newMessages = [...this.messages(), message];
     this.messages.set(newMessages);
@@ -77,7 +73,7 @@ Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um 
   updateLastMessage(updateFn: (lastMessage: ChatMessage) => void): void {
     const currentMessages = this.messages();
     if (currentMessages.length === 0) return;
-    
+
     // Create a copy to avoid direct mutation of signal's value
     const lastMessage = { ...currentMessages[currentMessages.length - 1] };
     updateFn(lastMessage);
@@ -87,9 +83,10 @@ Para começar, basta me dizer o que você treinou hoje. Ou, se preferir, use um 
     this.saveToStorage(newMessages);
   }
 
-  deleteMessage(id: number): void {
-    const newMessages = this.messages().filter(m => m.id !== id);
+  deleteMessage(id: string): void {
+    const newMessages = this.messages().filter((m) => m.id !== id);
     this.messages.set(newMessages);
     this.saveToStorage(newMessages);
   }
 }
+

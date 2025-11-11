@@ -1,14 +1,12 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ChatComponent } from './components/chatbot.component';
+import { Component, ChangeDetectionStrategy } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { ChatComponent } from "./components/chatbot/chatbot.component";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [CommonModule, ChatComponent],
-  templateUrl: './app.component.html',
+  templateUrl: "./app.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent {
-  
-}
+export class AppComponent {}

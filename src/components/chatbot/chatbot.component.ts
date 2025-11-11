@@ -10,17 +10,17 @@ import {
 } from "@angular/core";
 import { CommonModule, DatePipe } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import { AiService } from "../services/gemini.service";
-import { WorkoutService } from "../services/workout.service";
-import { ChatService } from "../services/chat.service";
-import { ChatMessage, Workout, USER_PROFILE, WorkoutSet } from "../models"; // Importar WorkoutSet
-import { WorkoutCardComponent } from "./workout-card.component";
+import { AiService } from "../../services/gemini.service";
+import { WorkoutService } from "../../services/workout.service";
+import { ChatService } from "../../services/chat.service";
+import { ChatMessage, Workout, USER_PROFILE, WorkoutSet } from "../../models"; // Importar WorkoutSet
+import { WorkoutCardComponent } from "../workout-card/workout-card.component";
 // Importar as novas interfaces do summary-card
 import {
   StatsSummaryCardComponent,
   StatsSummary,
   WeekStats,
-} from "./summary-card.component";
+} from "./../summary-card/summary-card.component";
 
 // Interfaces for history view
 interface DayGroup {
@@ -251,7 +251,7 @@ export class ChatComponent {
       this.addMessage(
         "model",
         "error",
-        "Por favor, configure sua chave de API da DeepSeek nas configurações. ⚙️"
+        "Por favor, configure sua chave de API do DeepSeek nas configurações. ⚙️"
       );
       this.showSettings.set(true);
       return;
@@ -259,7 +259,7 @@ export class ChatComponent {
 
     this.isLoading.set(true);
     const userMessage: ChatMessage = {
-      id: Date.now() + Math.random(),
+      id: (Date.now() + Math.random()).toString(),
       role: "user",
       type: "text",
       text: userMessageText,
@@ -269,7 +269,7 @@ export class ChatComponent {
     this.userInput.set("");
 
     this.chatService.addMessage({
-      id: Date.now() + 1,
+      id: (Date.now() + Math.random()).toString(),
       role: "model",
       type: "loading",
       timestamp: new Date().toISOString(),
@@ -277,21 +277,21 @@ export class ChatComponent {
     this.scrollToBottom();
 
     try {
-      const stream = await this.aiService.sendMessageStream(userMessageText);
+      const stream = this.aiService.sendMessageStream(userMessageText);
       let fullResponse = "";
 
       // Convert the 'loading' bubble to a 'text' bubble to show the streaming response
       this.chatService.updateLastMessage((lastMessage) => {
-        lastMessage.type = 'text';
+        lastMessage.type = "text";
         lastMessage.text = "";
       });
 
       for await (const chunk of stream) {
-        const content = chunk || "";
+        const content = chunk || ""; // Chunk from AiService is a string delta
         if (content) {
           fullResponse += content;
           // Update the UI in real-time as chunks arrive
-          this.chatService.updateLastMessage(lastMessage => {
+          this.chatService.updateLastMessage((lastMessage) => {
             lastMessage.text = fullResponse;
           });
         }
@@ -317,10 +317,10 @@ export class ChatComponent {
           error.message.toLowerCase().includes("incorrect api key")
         ) {
           errorMessage =
-            "A chave de API da DeepSeek parece ser inválida. Verifique-a nas configurações. 🔑";
+            "A chave de API do DeepSeek parece ser inválida. Verifique-a nas configurações. 🔑";
         } else if (error.message.includes("DeepSeek API key not set")) {
           errorMessage =
-            "Por favor, configure sua chave de API da DeepSeek nas configurações. ⚙️";
+            "Por favor, configure sua chave de API do DeepSeek nas configurações. ⚙️";
         }
       }
       this.chatService.updateLastMessage((lastMessage) => {
@@ -525,13 +525,10 @@ export class ChatComponent {
           );
           const consistencyStats = this.getConsistencyStats(allWorkouts, 7);
 
-          const typeDistribution = allWorkouts.reduce(
-            (acc, w) => {
-              acc[w.type] = (acc[w.type] || 0) + 1;
-              return acc;
-            },
-            {} as { [key in "musculacao" | "cardio" | "isometrico"]?: number }
-          );
+          const typeDistribution = allWorkouts.reduce((acc, w) => {
+            acc[w.type] = (acc[w.type] || 0) + 1;
+            return acc;
+          }, {} as { [key in "musculacao" | "cardio" | "isometrico"]?: number });
 
           // Montar o payload
           const summaryPayload: StatsSummary = {
@@ -572,7 +569,7 @@ export class ChatComponent {
     }
   }
 
-  deleteWorkout(workoutId: number, messageId?: number) {
+  deleteWorkout(workoutId: number, messageId?: string) {
     this.workoutService.deleteWorkout(workoutId);
     if (messageId) {
       this.chatService.deleteMessage(messageId);
@@ -669,7 +666,7 @@ export class ChatComponent {
     payload?: any
   ) {
     const newMessage: ChatMessage = {
-      id: Date.now() + Math.random(), // Add random to avoid ID collision in fast multi-add
+      id: (Date.now() + Math.random()).toString(), // Add random to avoid ID collision in fast multi-add
       role,
       type,
       text,
@@ -688,3 +685,4 @@ export class ChatComponent {
     }, 0);
   }
 }
+
