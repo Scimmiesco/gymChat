@@ -1,8 +1,10 @@
 <div
-  class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-slate-800/25 "
+  class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-slate-800/25"
 >
   <!-- Header -->
-  <header class="flex items-center justify-between p-3 bg-slate-900/75 backdrop-blur-sm shrink-0">
+  <header
+    class="flex items-center justify-between p-3 bg-slate-900/75 backdrop-blur-sm shrink-0"
+  >
     <div
       (click)="showProfile.set(true)"
       class="flex items-center cursor-pointer"
@@ -113,7 +115,9 @@
                 class="w-full p-3 text-left bg-slate-800/50 hover:bg-slate-800/80 transition-colors focus:outline-none flex justify-between items-center"
               >
                 <div>
-                  <h4 class="font-bold text-white">{{ weekGroup.weekLabel }}</h4>
+                  <h4 class="font-bold text-white">
+                    {{ weekGroup.weekLabel }}
+                  </h4>
                   <p class="text-xs text-slate-400">
                     {{ weekGroup.totalWorkouts }} treinos •
                     {{ weekGroup.totalDuration }} min • ~{{
@@ -226,71 +230,7 @@
 
   <!-- Profile Modal -->
   @if (showProfile()) {
-  <div
-    (click)="showProfile.set(false)"
-    class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 animate-fade-in"
-  >
-    <div
-      (click)="$event.stopPropagation()"
-      class="bg-slate-800 rounded-2xl p-6 w-full max-w-sm"
-    >
-      <div class="flex flex-col items-center text-center">
-        <div
-          class="w-20 h-20 rounded-full bg-slate-600 flex items-center justify-center text-5xl mb-4"
-        >
-          <span>👤</span>
-        </div>
-        <h2 class="text-2xl font-bold">Perfil do Usuário</h2>
-        <p class="">Estes dados são usados para calcular as estimativas.</p>
-        <div
-          class="text-left space-y-2 mt-6 w-full bg-slate-900/50 p-4 rounded-md"
-        >
-          <p>
-            <strong>Físico:</strong>
-            <span class="text-emerald-400 font-medium">{{
-              userProfile.physique
-            }}</span>
-          </p>
-          <p>
-            <strong>Idade:</strong>
-            <span class="text-emerald-400 font-medium"
-              >{{ userProfile.age }} anos</span
-            >
-          </p>
-          <p>
-            <strong>Altura:</strong>
-            <span class="text-emerald-400 font-medium"
-              >{{ userProfile.height }} cm</span
-            >
-          </p>
-          <p>
-            <strong>Peso:</strong>
-            <span class="text-emerald-400 font-medium"
-              >{{ userProfile.weight }} kg</span
-            >
-          </p>
-          <p>
-            <strong>Sexo:</strong>
-            <span class="text-emerald-400 font-medium">{{
-              userProfile.gender
-            }}</span>
-          </p>
-          <p class="border-t border-slate-900/50 pt-2 mt-2">
-            <strong>TMB (Est.):</strong>
-            <span class="text-emerald-400 font-medium"
-              >{{ userProfile.bmr | number : "1.0-0" }} cal/dia</span
-            >
-          </p>
-        </div>
-        <button
-          (click)="showProfile.set(false)"
-          class="mt-6 bg-emerald-600 font-bold py-2 px-6 rounded-md w-full hover:bg-emerald-600 transition-colors"
-        >
-          Fechar
-        </button>
-      </div>
-    </div>
-  </div>
+  <app-user [(showProfile)]="showProfile"></app-user>
   }
 
   <!-- Settings Modal -->
@@ -350,3 +290,4 @@
     accept=".json"
   />
 </div>
+

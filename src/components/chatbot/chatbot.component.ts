@@ -15,6 +15,7 @@ import { WorkoutService } from "../../services/workout.service";
 import { ChatService } from "../../services/chat.service";
 import { ChatMessage, Workout, USER_PROFILE, WorkoutSet } from "../../models"; // Importar WorkoutSet
 import { WorkoutCardComponent } from "../workout-card/workout-card.component";
+import { UserComponent } from "../user/user.component";
 // Importar as novas interfaces do summary-card
 import {
   StatsSummaryCardComponent,
@@ -45,6 +46,7 @@ interface WeekGroup {
     CommonModule,
     FormsModule,
     DatePipe,
+    UserComponent,
     WorkoutCardComponent,
     StatsSummaryCardComponent,
   ],
