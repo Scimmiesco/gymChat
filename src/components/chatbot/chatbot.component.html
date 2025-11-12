@@ -2,13 +2,17 @@
   class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-slate-800/25"
 >
   <!-- Header -->
-  <app-header (quickAction)="sendQuickAction($event)"></app-header>
+  <app-header
+    [(showProfile)]="showProfile"
+    [(showSettings)]="showSettings"
+    (quickAction)="sendQuickAction($event)"
+  ></app-header>
 
   <!-- Messages -->
   <div
     #chatContainer
     (scroll)="onChatScroll($event)"
-    class="flex-1 p-4 space-y-4 overflow-y-auto min-w-1/2 chat-container relative pb-20 bg-slate-900/50"
+    class="flex-1 space-y-4 overflow-y-auto min-w-1/2 chat-container relative pb-20 bg-slate-900/50 overflow-x-hidden"
   >
     @for (message of messages(); track message.id) {
     <div

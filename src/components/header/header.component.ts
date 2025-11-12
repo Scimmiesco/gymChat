@@ -1,4 +1,4 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, model, output, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
 @Component({
@@ -50,8 +50,8 @@ import { CommonModule } from "@angular/common";
   `,
 })
 export class HeaderComponent {
-  showProfile = signal(false);
-  showSettings = signal(false);
+  showProfile = model<boolean>();
+  showSettings = model<boolean>();
   quickAction = output<string>();
 
   sendQuickAction(action: string) {
