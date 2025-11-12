@@ -84,6 +84,12 @@ export interface UserProfile {
           >
             Fechar
           </button>
+          <button
+            (click)="limparCache()"
+            class="mt-6 bg-emerald-600 font-bold py-2 px-6 rounded-md w-full hover:bg-emerald-600 transition-colors"
+          >
+            Limpar Cache
+          </button>
         </div>
       </div>
     </div>
@@ -103,5 +109,10 @@ export class UserComponent {
 
   close(): void {
     this.showProfile.set(false);
+  }
+
+  limparCache() {
+    localStorage.clear();
+    window.location.reload();
   }
 }
