@@ -16,6 +16,7 @@ import { ChatService } from "../../services/chat.service";
 import { ChatMessage, Workout, USER_PROFILE, WorkoutSet } from "../../models"; // Importar WorkoutSet
 import { WorkoutCardComponent } from "../workout-card/workout-card.component";
 import { UserComponent } from "../user/user.component";
+import { SettingsComponent } from "../settings/settings.component";
 // Importar as novas interfaces do summary-card
 import {
   StatsSummaryCardComponent,
@@ -49,6 +50,7 @@ interface WeekGroup {
     UserComponent,
     WorkoutCardComponent,
     StatsSummaryCardComponent,
+    SettingsComponent,
   ],
   templateUrl: "./chatbot.component.html",
   providers: [DatePipe],
@@ -246,6 +248,7 @@ export class ChatComponent {
   }
 
   async sendMessage(): Promise<void> {
+    debugger;
     const userMessageText = this.userInput().trim();
     if (!userMessageText || this.isLoading()) return;
 
@@ -260,18 +263,20 @@ export class ChatComponent {
     }
 
     this.isLoading.set(true);
+
     const userMessage: ChatMessage = {
-      id: (Date.now() + Math.random()).toString(),
+      id: this.obterIdAleatorio(),
       role: "user",
       type: "text",
       text: userMessageText,
       timestamp: new Date().toISOString(),
     };
+    
     this.chatService.addMessage(userMessage);
     this.userInput.set("");
 
     this.chatService.addMessage({
-      id: (Date.now() + Math.random()).toString(),
+      id: this.obterIdAleatorio(),
       role: "model",
       type: "loading",
       timestamp: new Date().toISOString(),
@@ -337,10 +342,10 @@ export class ChatComponent {
     }
   }
 
-  saveSettings() {
-    this.chatService.saveApiKey(this.apiKeyInput().trim());
-    this.showSettings.set(false);
-    this.addMessage("model", "text", "✅ Chave de API salva com sucesso!");
+  private obterIdAleatorio(): string {
+    return (
+      Date.now().toFixed(0).toString() + Math.floor(Math.random()).toString()
+    );
   }
 
   private getDefaultTextForAction(action: string): string {
@@ -668,7 +673,7 @@ export class ChatComponent {
     payload?: any
   ) {
     const newMessage: ChatMessage = {
-      id: (Date.now() + Math.random()).toString(), // Add random to avoid ID collision in fast multi-add
+      id: this.obterIdAleatorio(), // Add random to avoid ID collision in fast multi-add
       role,
       type,
       text,
