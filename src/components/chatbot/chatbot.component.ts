@@ -17,6 +17,8 @@ import { ChatMessage, Workout, USER_PROFILE, WorkoutSet } from "../../models"; /
 import { WorkoutCardComponent } from "../workout-card/workout-card.component";
 import { UserComponent } from "../user/user.component";
 import { SettingsComponent } from "../settings/settings.component";
+import { HeaderComponent } from "../header/header.component";
+
 // Importar as novas interfaces do summary-card
 import {
   StatsSummaryCardComponent,
@@ -51,6 +53,7 @@ interface WeekGroup {
     WorkoutCardComponent,
     StatsSummaryCardComponent,
     SettingsComponent,
+    HeaderComponent,
   ],
   templateUrl: "./chatbot.component.html",
   providers: [DatePipe],
@@ -271,7 +274,7 @@ export class ChatComponent {
       text: userMessageText,
       timestamp: new Date().toISOString(),
     };
-    
+
     this.chatService.addMessage(userMessage);
     this.userInput.set("");
 
@@ -692,4 +695,3 @@ export class ChatComponent {
     }, 0);
   }
 }
-

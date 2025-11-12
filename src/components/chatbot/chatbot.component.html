@@ -2,53 +2,13 @@
   class="relative flex flex-col h-full w-full max-w-4xl mx-auto bg-slate-800/25"
 >
   <!-- Header -->
-  <header
-    class="flex items-center justify-between p-3 bg-slate-900/75 backdrop-blur-sm shrink-0"
-  >
-    <div
-      (click)="showProfile.set(true)"
-      class="flex items-center cursor-pointer"
-    >
-      <div
-        class="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center text-xl mr-4"
-      >
-        <span>👤</span>
-      </div>
-      <div>
-        <h3 class="font-semibold">Gymini</h3>
-      </div>
-    </div>
-
-    <div class="flex items-center space-x-1 sm:space-x-2">
-      <button
-        (click)="sendQuickAction('Ver meu histórico')"
-        class="text-2xl transition-colors p-2 rounded-full"
-        title="Ver Histórico"
-      >
-        <span>📜</span>
-      </button>
-      <button
-        (click)="sendQuickAction('Mostrar resumo')"
-        class="text-2xl transition-colors p-2 rounded-full"
-        title="Mostrar Resumo"
-      >
-        <span>📊</span>
-      </button>
-      <button
-        (click)="showSettings.set(true)"
-        class="text-2xl transition-colors p-2 rounded-full"
-        title="Configurações"
-      >
-        <span>⚙️</span>
-      </button>
-    </div>
-  </header>
+  <app-header (quickAction)="sendQuickAction($event)"></app-header>
 
   <!-- Messages -->
   <div
     #chatContainer
     (scroll)="onChatScroll($event)"
-    class="flex-1 p-4 space-y-4 overflow-y-auto min-w-1/2 chat-container relative pb-20"
+    class="flex-1 p-4 space-y-4 overflow-y-auto min-w-1/2 chat-container relative pb-20 bg-slate-900/50"
   >
     @for (message of messages(); track message.id) {
     <div
@@ -56,7 +16,7 @@
       [class.justify-end]="message.role === 'user'"
     >
       <div
-        class="w-11/12 md:w-3/4 rounded-md p-2 relative backdrop-blur-sm"
+        class="md:w-3/4 rounded-md p-2 relative backdrop-blur-sm"
         [class.chat-bubble-user]="message.role === 'user'"
         [class.chat-bubble-model]="message.role === 'model'"
       >
@@ -185,7 +145,10 @@
           </div>
         </div>
         } }
-        <div class="text-xs text-right mt-1">
+        <div
+          [class.hora-container-model]="message.role === 'model'"
+          class="text-xs text-right mt-1"
+        >
           {{ message.timestamp | date : "HH:mm" }}
         </div>
       </div>
@@ -249,4 +212,3 @@
     accept=".json"
   />
 </div>
-
