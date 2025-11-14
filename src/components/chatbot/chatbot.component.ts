@@ -18,6 +18,7 @@ import { WorkoutCardComponent } from "../workout-card/workout-card.component";
 import { UserComponent } from "../user/user.component";
 import { SettingsComponent } from "../settings/settings.component";
 import { HeaderComponent } from "../header/header.component";
+import { ChatInput } from "../chat-input/chat-input.component";
 
 // Importar as novas interfaces do summary-card
 import {
@@ -54,6 +55,7 @@ interface WeekGroup {
     StatsSummaryCardComponent,
     SettingsComponent,
     HeaderComponent,
+    ChatInput,
   ],
   templateUrl: "./chatbot.component.html",
   providers: [DatePipe],
@@ -213,25 +215,6 @@ export class ChatComponent {
 
     const workoutDate = new Date(dateString + "T12:00:00Z"); // Use noon UTC to avoid timezone issues
     return this.datePipe.transform(workoutDate, "dd/MM/yyyy") || dateString;
-  }
-
-  onKeydown(event: KeyboardEvent): void {
-    if (event.key === "Enter" && event.shiftKey) {
-      // Let the default behavior (new line) happen
-      return;
-    }
-    if (event.key === "Enter") {
-      event.preventDefault(); // Prevent new line on Enter
-      this.sendMessage();
-    }
-  }
-
-  autoResize(target: EventTarget | null): void {
-    if (target) {
-      const element = target as HTMLTextAreaElement;
-      element.style.height = "auto"; // Reset height to recalculate
-      element.style.height = `${element.scrollHeight}px`;
-    }
   }
 
   private parseJsonFromText(text: string): any {
