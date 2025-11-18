@@ -14,15 +14,14 @@ import { AiService } from "../../services/gemini.service";
 import { WorkoutService } from "../../services/workout.service";
 import { ChatService } from "../../services/chat.service";
 import { ChatMessage, Workout, USER_PROFILE, WorkoutSet } from "../../models"; // Importar WorkoutSet
-import { WorkoutCardComponent } from "../workout-card/workout-card.component";
 import { UserComponent } from "../user/user.component";
 import { SettingsComponent } from "../settings/settings.component";
 import { HeaderComponent } from "../header/header.component";
 import { ChatInput } from "../chat-input/chat-input.component";
+import { MessageItemComponent } from "../message-item/message-item.component";
 
 // Importar as novas interfaces do summary-card
 import {
-  StatsSummaryCardComponent,
   StatsSummary,
   WeekStats,
 } from "./../summary-card/summary-card.component";
@@ -49,13 +48,11 @@ interface WeekGroup {
   imports: [
     CommonModule,
     FormsModule,
-    DatePipe,
     UserComponent,
-    WorkoutCardComponent,
-    StatsSummaryCardComponent,
     SettingsComponent,
     HeaderComponent,
     ChatInput,
+    MessageItemComponent,
   ],
   templateUrl: "./chatbot.component.html",
   providers: [DatePipe],
@@ -82,7 +79,7 @@ export class ChatComponent {
   workouts = this.workoutService.workouts;
   totalWorkouts = this.workoutService.totalWorkouts;
   totalCalories = this.workoutService.totalCalories;
-
+  private proximoId = 1;
   openWeekIdentifiers = signal<Set<string>>(new Set());
 
   groupedWorkoutsByWeek = computed((): WeekGroup[] => {
@@ -174,20 +171,17 @@ export class ChatComponent {
       }
     });
 
-    // Effect to auto-open the first week if no weeks are currently open
-    effect(
-      () => {
-        const groups = this.groupedWorkoutsByWeek();
-        if (groups.length > 0 && this.openWeekIdentifiers().size === 0) {
-          this.openWeekIdentifiers.set(new Set([groups[0].weekIdentifier]));
-        }
-      },
-      { allowSignalWrites: true }
-    );
-  }
+    effect(() => {
+      console.log(this.messages());
+    });
 
-  isWeekOpen(weekIdentifier: string): boolean {
-    return this.openWeekIdentifiers().has(weekIdentifier);
+    // Effect to auto-open the first week if no weeks are currently open
+    effect(() => {
+      const groups = this.groupedWorkoutsByWeek();
+      if (groups.length > 0 && this.openWeekIdentifiers().size === 0) {
+        this.openWeekIdentifiers.set(new Set([groups[0].weekIdentifier]));
+      }
+    });
   }
 
   toggleWeek(weekIdentifier: string): void {
@@ -234,7 +228,6 @@ export class ChatComponent {
   }
 
   async sendMessage(): Promise<void> {
-    debugger;
     const userMessageText = this.userInput().trim();
     if (!userMessageText || this.isLoading()) return;
 
@@ -329,9 +322,8 @@ export class ChatComponent {
   }
 
   private obterIdAleatorio(): string {
-    return (
-      Date.now().toFixed(0).toString() + Math.floor(Math.random()).toString()
-    );
+    this.proximoId++;
+    return (Date.now() + this.proximoId).toString();
   }
 
   private getDefaultTextForAction(action: string): string {
