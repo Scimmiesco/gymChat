@@ -17,9 +17,8 @@
     @for (message of messages(); track message.id) {
     <app-message-item
       [message]="message"
-      [workouts]="workouts()"
       [groupedWorkoutsByWeek]="groupedWorkoutsByWeek()"
-      [getFriendlyDateHeader]="getFriendlyDateHeader"
+      [openWeeks]="openWeekIdentifiers()"
       (quickAction)="sendQuickAction($event)"
       (deleteWorkout)="deleteWorkout($event)"
       (toggleWeek)="toggleWeek($event)"
